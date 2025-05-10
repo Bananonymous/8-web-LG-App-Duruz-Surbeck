@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './AdminPanel.css';
 
 // Sous-composants pour l'administration
 const AdminHome = () => {
@@ -64,11 +65,12 @@ const CardManager = () => {
 
   return (
     <div className="admin-cards">
-      <h2>Gestion des Cartes</h2>
-
-      <Link to="/admin/cards/new" className="btn">
-        Ajouter une Carte
-      </Link>
+      <div className="admin-header">
+        <h2>Gestion des Cartes</h2>
+        <Link to="/admin/cards/new" className="btn btn-add">
+          Ajouter une Carte
+        </Link>
+      </div>
 
       <div className="admin-table">
         <table>
@@ -126,20 +128,37 @@ const CardForm = () => {
   const cardId = isEditMode ? window.location.pathname.split('/').pop() : null;
 
   useEffect(() => {
-    if (isEditMode) {
+    if (isEditMode && cardId) {
       const fetchCard = async () => {
         try {
+          setLoading(true);
+          console.log(`Fetching card with ID: ${cardId}`);
           const response = await axios.get(`http://localhost:5000/api/cards/${cardId}`);
-          const cardData = { ...response.data };
+          console.log('Card data received:', response.data);
 
-          // Strip the path from the image URL if it exists
-          if (cardData.image_url && cardData.image_url.startsWith('/images/')) {
-            cardData.image_url = cardData.image_url.replace('/images/', '');
+          if (response.data) {
+            const cardData = { ...response.data };
+
+            // Convert is_custom from 0/1 to boolean if needed
+            if (typeof cardData.is_custom === 'number') {
+              cardData.is_custom = Boolean(cardData.is_custom);
+            }
+
+            // Strip the path from the image URL if it exists
+            if (cardData.image_url && cardData.image_url.startsWith('/images/')) {
+              cardData.image_url = cardData.image_url.replace('/images/', '');
+            }
+
+            console.log('Processed card data:', cardData);
+            setFormData(cardData);
+          } else {
+            setError('Données de carte non trouvées');
           }
-
-          setFormData(cardData);
         } catch (error) {
+          console.error('Error fetching card:', error);
           setError('Erreur lors du chargement de la carte');
+        } finally {
+          setLoading(false);
         }
       };
 
@@ -192,7 +211,11 @@ const CardForm = () => {
         {isEditMode ? 'Modifier la Carte' : 'Ajouter une Carte'}
       </h2>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <i className="error-icon">⚠️</i> {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -355,11 +378,12 @@ const EventManager = () => {
 
   return (
     <div className="admin-events">
-      <h2>Gestion des Événements</h2>
-
-      <Link to="/admin/events/new" className="btn">
-        Ajouter un Événement
-      </Link>
+      <div className="admin-header">
+        <h2>Gestion des Événements</h2>
+        <Link to="/admin/events/new" className="btn btn-add">
+          Ajouter un Événement
+        </Link>
+      </div>
 
       <div className="admin-table">
         <table>
@@ -434,19 +458,32 @@ const EventForm = () => {
   const eventId = isEditMode ? window.location.pathname.split('/').pop() : null;
 
   useEffect(() => {
-    if (isEditMode) {
+    if (isEditMode && eventId) {
       const fetchEvent = async () => {
         try {
+          setLoading(true);
+          console.log(`Fetching event with ID: ${eventId}`);
           const response = await axios.get(`http://localhost:5000/api/events/${eventId}`);
-          // Formater la date pour l'input date
-          const event = response.data;
-          if (event.date) {
-            const date = new Date(event.date);
-            event.date = date.toISOString().split('T')[0];
+          console.log('Event data received:', response.data);
+
+          if (response.data) {
+            // Formater la date pour l'input date
+            const event = { ...response.data };
+            if (event.date) {
+              const date = new Date(event.date);
+              event.date = date.toISOString().split('T')[0];
+            }
+
+            console.log('Processed event data:', event);
+            setFormData(event);
+          } else {
+            setError('Données d\'événement non trouvées');
           }
-          setFormData(event);
         } catch (error) {
+          console.error('Error fetching event:', error);
           setError('Erreur lors du chargement de l\'événement');
+        } finally {
+          setLoading(false);
         }
       };
 
@@ -485,7 +522,11 @@ const EventForm = () => {
         {isEditMode ? 'Modifier l\'Événement' : 'Ajouter un Événement'}
       </h2>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <i className="error-icon">⚠️</i> {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">

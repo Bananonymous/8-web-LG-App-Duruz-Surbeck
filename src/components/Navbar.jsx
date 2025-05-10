@@ -1,8 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
+  const { theme } = useTheme();
   const location = useLocation();
 
   // Fonction pour déterminer si un lien est actif
@@ -14,7 +17,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
-          Loups-Garous de Thiercelieux
+          Les idiots du village
         </Link>
         <div className="navbar-links">
           <Link to="/" className={isActive('/')}>Accueil</Link>
@@ -36,6 +39,7 @@ const Navbar = () => {
           ) : (
             <Link to="/login" className={isActive('/login')}>Connexion</Link>
           )}
+          <ThemeToggle />
         </div>
       </div>
     </nav>
