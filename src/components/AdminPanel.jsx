@@ -17,6 +17,9 @@ const AdminHome = () => {
         <Link to="/admin/events" className="btn">
           Gérer les Événements
         </Link>
+        <Link to="/admin/variants" className="btn">
+          Gérer les Variantes
+        </Link>
       </div>
     </div>
   );
@@ -119,7 +122,10 @@ const CardForm = () => {
     description: '',
     lore: '',
     image_url: '',
-    is_custom: false
+    is_custom: false,
+    wakes_up_at_night: false,
+    wakes_up_every_night: false,
+    wake_up_frequency: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -313,6 +319,57 @@ const CardForm = () => {
           <p className="checkbox-help">Cochez cette case si cette carte est une création personnalisée et non une carte officielle du jeu.</p>
         </div>
 
+        <div className="form-section">
+          <h3 className="form-section-title">Informations de jeu (visibles uniquement pour les administrateurs)</h3>
+
+          <div className="form-group checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="wakes_up_at_night"
+                checked={formData.wakes_up_at_night}
+                onChange={handleChange}
+              />
+              Se réveille la nuit
+            </label>
+          </div>
+
+          {formData.wakes_up_at_night && (
+            <>
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="wakes_up_every_night"
+                    checked={formData.wakes_up_every_night}
+                    onChange={handleChange}
+                  />
+                  Se réveille chaque nuit
+                </label>
+              </div>
+
+              {!formData.wakes_up_every_night && (
+                <div className="form-group">
+                  <label htmlFor="wake_up_frequency" className="form-label">Fréquence de réveil</label>
+                  <select
+                    id="wake_up_frequency"
+                    name="wake_up_frequency"
+                    className="form-select"
+                    value={formData.wake_up_frequency || ''}
+                    onChange={handleChange}
+                  >
+                    <option value="">Sélectionner une fréquence</option>
+                    <option value="1rst night only">Première nuit seulement</option>
+                    <option value="1/2 nights">Une nuit sur deux</option>
+                    <option value="1/3 nights">Une nuit sur trois</option>
+                    <option value="1/4 nights">Une nuit sur quatre</option>
+                  </select>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         <div className="form-actions">
           <button type="submit" className="btn" disabled={loading}>
             {loading ? 'Enregistrement...' : 'Enregistrer'}
@@ -427,6 +484,389 @@ const EventManager = () => {
   );
 };
 
+// Gestion des variantes
+const VariantManager = () => {
+  const [variants, setVariants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchVariants = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/variants');
+        setVariants(response.data);
+        setLoading(false);
+      } catch (error) {
+        setError('Erreur lors du chargement des variantes');
+        setLoading(false);
+      }
+    };
+
+    fetchVariants();
+  }, []);
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette variante ? Toutes les cartes associées seront également supprimées.')) {
+      try {
+        await axios.delete(`http://localhost:5000/api/variants/${id}`);
+        setVariants(variants.filter(variant => variant.id !== id));
+      } catch (error) {
+        setError('Erreur lors de la suppression de la variante');
+      }
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Chargement des variantes...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error}</div>;
+  }
+
+  return (
+    <div className="admin-variants">
+      <div className="admin-header">
+        <h2>Gestion des Variantes</h2>
+        <Link to="/admin/variants/new" className="btn btn-add">
+          Ajouter une Variante
+        </Link>
+      </div>
+
+      <div className="admin-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nom</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {variants.map(variant => (
+              <tr key={variant.id}>
+                <td>{variant.id}</td>
+                <td>{variant.name}</td>
+                <td>{variant.description.substring(0, 50)}...</td>
+                <td>
+                  <button
+                    className="btn-edit"
+                    onClick={() => navigate(`/admin/variants/edit/${variant.id}`)}
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    className="btn-edit"
+                    onClick={() => navigate(`/admin/variant-cards/${variant.id}`)}
+                  >
+                    Cartes
+                  </button>
+                  <button
+                    className="btn-delete"
+                    onClick={() => handleDelete(variant.id)}
+                  >
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// Formulaire de variante (ajout/modification)
+const VariantForm = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    lore: '',
+    image_url: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const isEditMode = window.location.pathname.includes('/edit/');
+  const variantId = isEditMode ? window.location.pathname.split('/').pop() : null;
+
+  useEffect(() => {
+    if (isEditMode && variantId) {
+      const fetchVariant = async () => {
+        try {
+          setLoading(true);
+          const response = await axios.get(`http://localhost:5000/api/variants/${variantId}`);
+
+          if (response.data) {
+            const variantData = { ...response.data };
+
+            // Strip the path from the image URL if it exists
+            if (variantData.image_url && variantData.image_url.startsWith('/images/')) {
+              variantData.image_url = variantData.image_url.replace('/images/', '');
+            }
+
+            setFormData(variantData);
+          } else {
+            setError('Données de variante non trouvées');
+          }
+        } catch (error) {
+          console.error('Error fetching variant:', error);
+          setError('Erreur lors du chargement de la variante');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchVariant();
+    }
+  }, [isEditMode, variantId]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+
+      // Prepare data with proper image path
+      const variantData = { ...formData };
+
+      // If image_url is provided, prepend the path
+      if (variantData.image_url && variantData.image_url.trim() !== '') {
+        // Check if the user already included the path
+        if (!variantData.image_url.startsWith('/images/')) {
+          variantData.image_url = `/images/${variantData.image_url}`;
+        }
+      }
+
+      if (isEditMode) {
+        await axios.put(`http://localhost:5000/api/variants/${variantId}`, variantData);
+      } else {
+        await axios.post('http://localhost:5000/api/variants', variantData);
+      }
+
+      navigate('/admin/variants');
+    } catch (error) {
+      setError('Erreur lors de l\'enregistrement de la variante');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="form-container">
+      <h2 className="form-title">
+        {isEditMode ? 'Modifier la Variante' : 'Ajouter une Variante'}
+      </h2>
+
+      {error && (
+        <div className="error-message">
+          <i className="error-icon">⚠️</i> {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="name" className="form-label">Nom</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            className="form-input"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="description" className="form-label">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            className="form-textarea"
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="lore" className="form-label">Histoire/Lore (optionnel)</label>
+          <textarea
+            id="lore"
+            name="lore"
+            className="form-textarea"
+            value={formData.lore || ''}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="image_url" className="form-label">Nom de l'image (optionnel)</label>
+          <input
+            type="text"
+            id="image_url"
+            name="image_url"
+            className="form-input"
+            placeholder="exemple: nouvelle-lune.svg"
+            value={formData.image_url || ''}
+            onChange={handleChange}
+          />
+          <small className="form-help">Entrez seulement le nom du fichier, pas le chemin complet.</small>
+          {formData.image_url && (
+            <div className="image-preview">
+              <p>Aperçu de l'image:</p>
+              <img
+                src={formData.image_url ? `/images/${formData.image_url}` : '/images/defaut.png'}
+                alt="Aperçu"
+                className="preview-image"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/images/defaut.png';
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="form-actions">
+          <button type="submit" className="btn" disabled={loading}>
+            {loading ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate('/admin/variants')}
+          >
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+// Gestion des cartes de variante
+const VariantCardManager = () => {
+  const [variantCards, setVariantCards] = useState([]);
+  const [variant, setVariant] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const variantId = window.location.pathname.split('/').pop();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch variant details
+        const variantResponse = await axios.get(`http://localhost:5000/api/variants/${variantId}`);
+        setVariant(variantResponse.data);
+
+        // Fetch variant cards
+        const cardsResponse = await axios.get(`http://localhost:5000/api/variant-cards?variant_id=${variantId}`);
+        setVariantCards(cardsResponse.data);
+
+        setLoading(false);
+      } catch (error) {
+        setError('Erreur lors du chargement des données');
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [variantId]);
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette carte ?')) {
+      try {
+        await axios.delete(`http://localhost:5000/api/variant-cards/${id}`);
+        setVariantCards(variantCards.filter(card => card.id !== id));
+      } catch (error) {
+        setError('Erreur lors de la suppression de la carte');
+      }
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Chargement des cartes...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error}</div>;
+  }
+
+  if (!variant) {
+    return <div className="error">Variante non trouvée</div>;
+  }
+
+  return (
+    <div className="admin-variant-cards">
+      <div className="admin-header">
+        <h2>Cartes de la variante: {variant.name}</h2>
+        <Link to={`/admin/variant-cards/${variantId}/new`} className="btn btn-add">
+          Ajouter une Carte
+        </Link>
+      </div>
+
+      <div className="admin-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nom</th>
+              <th>Équipe</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {variantCards.map(card => (
+              <tr key={card.id}>
+                <td>{card.id}</td>
+                <td>{card.name}</td>
+                <td>{card.team}</td>
+                <td>
+                  <button
+                    className="btn-edit"
+                    onClick={() => navigate(`/admin/variant-cards/${variantId}/edit/${card.id}`)}
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    className="btn-delete"
+                    onClick={() => handleDelete(card.id)}
+                  >
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="admin-actions">
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate('/admin/variants')}
+        >
+          Retour aux Variantes
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Composant principal du panneau d'administration
 const AdminPanel = () => {
   return (
@@ -439,6 +879,12 @@ const AdminPanel = () => {
         <Route path="/events" element={<EventManager />} />
         <Route path="/events/new" element={<EventForm />} />
         <Route path="/events/edit/:id" element={<EventForm />} />
+        <Route path="/variants" element={<VariantManager />} />
+        <Route path="/variants/new" element={<VariantForm />} />
+        <Route path="/variants/edit/:id" element={<VariantForm />} />
+        <Route path="/variant-cards/:id" element={<VariantCardManager />} />
+        <Route path="/variant-cards/:id/new" element={<VariantCardForm />} />
+        <Route path="/variant-cards/:id/edit/:cardId" element={<VariantCardForm />} />
       </Routes>
     </div>
   );
@@ -587,6 +1033,290 @@ const EventForm = () => {
             type="button"
             className="btn btn-secondary"
             onClick={() => navigate('/admin/events')}
+          >
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+// Formulaire de carte de variante (ajout/modification)
+const VariantCardForm = () => {
+  const [formData, setFormData] = useState({
+    variant_id: '',
+    name: '',
+    team: '',
+    description: '',
+    lore: '',
+    image_url: '',
+    wakes_up_at_night: false,
+    wakes_up_every_night: false,
+    wake_up_frequency: ''
+  });
+  const [variant, setVariant] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  // Get variant ID from URL
+  const pathParts = window.location.pathname.split('/');
+  const variantId = pathParts[3];
+
+  // Check if we're in edit mode
+  const isEditMode = pathParts.includes('edit');
+  const cardId = isEditMode ? pathParts[5] : null;
+
+  // Fetch variant details
+  useEffect(() => {
+    const fetchVariant = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/variants/${variantId}`);
+        setVariant(response.data);
+
+        // Set variant_id in form data
+        setFormData(prev => ({
+          ...prev,
+          variant_id: variantId
+        }));
+      } catch (error) {
+        console.error('Error fetching variant:', error);
+        setError('Erreur lors du chargement de la variante');
+      }
+    };
+
+    fetchVariant();
+  }, [variantId]);
+
+  // If in edit mode, fetch card details
+  useEffect(() => {
+    if (isEditMode && cardId) {
+      const fetchCard = async () => {
+        try {
+          setLoading(true);
+          const response = await axios.get(`http://localhost:5000/api/variant-cards/${cardId}`);
+
+          if (response.data) {
+            const cardData = { ...response.data };
+
+            // Strip the path from the image URL if it exists
+            if (cardData.image_url && cardData.image_url.startsWith('/images/')) {
+              cardData.image_url = cardData.image_url.replace('/images/', '');
+            }
+
+            setFormData(cardData);
+          } else {
+            setError('Données de carte non trouvées');
+          }
+        } catch (error) {
+          console.error('Error fetching card:', error);
+          setError('Erreur lors du chargement de la carte');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchCard();
+    }
+  }, [isEditMode, cardId]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+
+      // Prepare data with proper image path
+      const cardData = { ...formData };
+
+      // If image_url is provided, prepend the path
+      if (cardData.image_url && cardData.image_url.trim() !== '') {
+        // Check if the user already included the path
+        if (!cardData.image_url.startsWith('/images/')) {
+          cardData.image_url = `/images/${cardData.image_url}`;
+        }
+      }
+
+      if (isEditMode) {
+        await axios.put(`http://localhost:5000/api/variant-cards/${cardId}`, cardData);
+      } else {
+        await axios.post('http://localhost:5000/api/variant-cards', cardData);
+      }
+
+      navigate(`/admin/variant-cards/${variantId}`);
+    } catch (error) {
+      setError('Erreur lors de l\'enregistrement de la carte');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!variant) {
+    return <div className="loading">Chargement de la variante...</div>;
+  }
+
+  return (
+    <div className="form-container">
+      <h2 className="form-title">
+        {isEditMode ? 'Modifier la Carte' : 'Ajouter une Carte'} - Variante: {variant.name}
+      </h2>
+
+      {error && (
+        <div className="error-message">
+          <i className="error-icon">⚠️</i> {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="name" className="form-label">Nom</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            className="form-input"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="team" className="form-label">Équipe</label>
+          <select
+            id="team"
+            name="team"
+            className="form-select"
+            value={formData.team}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Sélectionner une équipe</option>
+            <option value="Village">Village</option>
+            <option value="Loups-Garous">Loups-Garous</option>
+            <option value="Solitaire">Solitaire</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="description" className="form-label">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            className="form-textarea"
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="lore" className="form-label">Histoire (optionnel)</label>
+          <textarea
+            id="lore"
+            name="lore"
+            className="form-textarea"
+            value={formData.lore || ''}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="image_url" className="form-label">Nom de l'image (optionnel)</label>
+          <input
+            type="text"
+            id="image_url"
+            name="image_url"
+            className="form-input"
+            placeholder="exemple: chaman.svg"
+            value={formData.image_url || ''}
+            onChange={handleChange}
+          />
+          <small className="form-help">Entrez seulement le nom du fichier, pas le chemin complet.</small>
+          {formData.image_url && (
+            <div className="image-preview">
+              <p>Aperçu de l'image:</p>
+              <img
+                src={formData.image_url ? `/images/${formData.image_url}` : '/images/defaut.png'}
+                alt="Aperçu"
+                className="preview-image"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/images/defaut.png';
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="form-section">
+          <h3 className="form-section-title">Informations de jeu (visibles uniquement pour les administrateurs)</h3>
+
+          <div className="form-group checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="wakes_up_at_night"
+                checked={formData.wakes_up_at_night}
+                onChange={handleChange}
+              />
+              Se réveille la nuit
+            </label>
+          </div>
+
+          {formData.wakes_up_at_night && (
+            <>
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="wakes_up_every_night"
+                    checked={formData.wakes_up_every_night}
+                    onChange={handleChange}
+                  />
+                  Se réveille chaque nuit
+                </label>
+              </div>
+
+              {!formData.wakes_up_every_night && (
+                <div className="form-group">
+                  <label htmlFor="wake_up_frequency" className="form-label">Fréquence de réveil</label>
+                  <select
+                    id="wake_up_frequency"
+                    name="wake_up_frequency"
+                    className="form-select"
+                    value={formData.wake_up_frequency || ''}
+                    onChange={handleChange}
+                  >
+                    <option value="">Sélectionner une fréquence</option>
+                    <option value="1rst night only">Première nuit seulement</option>
+                    <option value="1/2 nights">Une nuit sur deux</option>
+                    <option value="1/3 nights">Une nuit sur trois</option>
+                    <option value="1/4 nights">Une nuit sur quatre</option>
+                  </select>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="form-actions">
+          <button type="submit" className="btn" disabled={loading}>
+            {loading ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate(`/admin/variant-cards/${variantId}`)}
           >
             Annuler
           </button>

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
 // Composants
@@ -11,6 +10,9 @@ import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import VariantList from './components/VariantList';
+import VariantLore from './components/VariantLore';
+import VariantCardDetail from './components/VariantCardDetail';
 
 // Contextes
 import { AuthProvider } from './context/AuthContext';
@@ -30,6 +32,9 @@ function App() {
                 <Route path="/cards/:id" element={<CardDetail />} />
                 <Route path="/calendar" element={<Calendar />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/variants/:id" element={<VariantList />} />
+                <Route path="/variants/:id/lore" element={<VariantLore />} />
+                <Route path="/variant-cards/:id" element={<VariantCardDetail />} />
                 <Route
                   path="/admin/*"
                   element={

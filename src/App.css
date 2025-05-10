@@ -140,6 +140,8 @@ body {
 .navbar-links {
   display: flex;
   gap: 1.5rem;
+  align-items: center;
+  height: 100%;
 }
 
 .navbar-links a {
@@ -150,6 +152,9 @@ body {
   padding: 0.6rem 1rem;
   border-radius: 6px;
   font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .navbar-links a:hover {
@@ -166,6 +171,80 @@ body {
 
 .navbar-logout {
   color: #ff9999 !important;
+}
+
+/* Dropdown styles */
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-dropdown-toggle {
+  color: var(--btn-primary-text);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+  margin: 0;
+}
+
+.nav-dropdown-toggle:hover {
+  color: var(--accent-color);
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.dropdown-arrow {
+  font-size: 0.7rem;
+  margin-left: 0.3rem;
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  min-width: 200px;
+  padding: 0.5rem 0;
+  margin: 0.125rem 0 0;
+  background-color: var(--card-background);
+  border-radius: 0.25rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.nav-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  clear: both;
+  text-align: left;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: background-color 0.2s;
+}
+
+.nav-dropdown-item:hover {
+  background-color: var(--table-row-hover);
+  color: var(--accent-color);
+}
+
+.nav-dropdown-item-empty {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-style: italic;
 }
 
 /* Home Page */
@@ -287,7 +366,8 @@ body {
 }
 
 .custom-badge,
-.official-badge {
+.official-badge,
+.variant-badge {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -304,6 +384,11 @@ body {
 
 .official-badge {
   background-color: #2c7d32;
+}
+
+.variant-badge {
+  background-color: #4b0082;
+  /* Purple for variants */
 }
 
 .card-content {
@@ -615,6 +700,22 @@ body {
   transition: color 0.3s ease;
 }
 
+.form-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.form-section-title {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
 .btn {
   display: inline-block;
   padding: 0.75rem 1.5rem;
@@ -650,6 +751,118 @@ body {
 .btn-secondary:hover {
   background-color: var(--btn-secondary-bg);
   filter: brightness(0.9);
+}
+
+/* Variant styles */
+.cards-subtitle {
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.variant-lore-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: var(--card-background);
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.variant-lore-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.variant-lore-header h1 {
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+.variant-image-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.variant-image {
+  max-width: 300px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.variant-lore-content {
+  margin-bottom: 2rem;
+}
+
+.variant-lore-content h2 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.variant-lore-text,
+.variant-description {
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.no-lore {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.variant-lore-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.card-detail-variant {
+  display: inline-block;
+  background-color: #4b0082;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+}
+
+.admin-section {
+  background-color: #f8f8f8;
+  border-left: 4px solid #4b0082;
+}
+
+.admin-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-info-item {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.admin-info-label {
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.admin-info-value {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+}
+
+.card-detail-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
 }
 
 /* Calendar */
