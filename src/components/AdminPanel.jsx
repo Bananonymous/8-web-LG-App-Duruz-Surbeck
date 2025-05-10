@@ -290,6 +290,7 @@ const CardForm = () => {
                 src={formData.image_url ? `/images/${formData.image_url}` : '/images/defaut.png'}
                 alt="Aperçu"
                 className="preview-image"
+                style={{ backgroundColor: 'white' }} /* Ensure image has white background */
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.src = '/images/defaut.png';
