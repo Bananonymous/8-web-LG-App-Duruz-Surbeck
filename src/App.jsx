@@ -42,7 +42,7 @@ function App() {
             </div>
             <footer className="footer">
               <div className="footer-content">
-                <p>© 2023 Les idiots du village - Catalogue</p>
+                <p>© 2025 Les idiots du village - Fait avec beaucoup d'amour </p>
               </div>
             </footer>
           </div>

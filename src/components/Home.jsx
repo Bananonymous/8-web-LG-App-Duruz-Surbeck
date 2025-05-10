@@ -4,9 +4,9 @@ const Home = () => {
   return (
     <div className="home-container">
       <div className="home-hero">
-        <h1>Bienvenue dans le Catalogue des Loups-Garous de Thiercelieux</h1>
+        <h1>Bienvenue chez les idiots du village</h1>
         <p className="home-subtitle">
-          Découvrez toutes les cartes du jeu, leurs rôles, et les prochaines dates de parties.
+          Découvrez toutes les cartes du jeu (y compris les peronnalisées), leurs rôles, et les prochaines dates de parties.
         </p>
         <div className="home-buttons">
           <Link to="/cards" className="btn">
