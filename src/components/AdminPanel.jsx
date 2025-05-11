@@ -3,6 +3,8 @@ import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AdminPanel.css';
 import WakeUpOrderConfig from './WakeUpOrderConfig';
+import AdminResetCards from './AdminResetCards';
+import AdminLogin from './AdminLogin';
 
 // Sous-composants pour l'administration
 const AdminHome = () => {
@@ -25,6 +27,11 @@ const AdminHome = () => {
           Ordre de Réveil
         </Link>
       </div>
+
+      <div className="admin-section" style={{ marginTop: '2rem' }}>
+        <h3>Maintenance</h3>
+        <AdminResetCards />
+      </div>
     </div>
   );
 };
@@ -34,22 +41,58 @@ const CardManager = () => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setRefreshKey(oldKey => oldKey + 1);
+  };
+
+  const handleHardRefresh = () => {
+    // Force a complete page reload, bypassing the cache
+    window.location.reload(true);
+  };
+
+  const handleFixIds = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.post('http://localhost:5000/api/fix-card-ids');
+      console.log('Fix IDs response:', response.data);
+      alert(`IDs fixed: ${JSON.stringify(response.data, null, 2)}`);
+      // Refresh the data
+      setRefreshKey(oldKey => oldKey + 1);
+    } catch (error) {
+      console.error('Error fixing IDs:', error);
+      alert('Error fixing IDs: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchCards = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/cards');
-        setCards(response.data);
+        // Add a timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const response = await axios.get(`http://localhost:5000/api/cards?_=${timestamp}`);
+        console.log('Cards fetched from server:', response.data);
+        // Log the first few card IDs to debug
+        if (response.data && response.data.length > 0) {
+          console.log('First few card IDs from API:', response.data.slice(0, 5).map(c => c.id));
+        }
+        // Make sure we're not modifying the data in any way
+        setCards([...response.data]);
         setLoading(false);
       } catch (error) {
+        console.error('Error fetching cards:', error);
         setError('Erreur lors du chargement des cartes');
         setLoading(false);
       }
     };
 
     fetchCards();
-  }, []);
+  }, [refreshKey]); // Add refreshKey as a dependency to trigger refresh
 
   const handleDelete = async (id) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette carte ?')) {
@@ -74,12 +117,27 @@ const CardManager = () => {
     <div className="admin-cards">
       <div className="admin-header">
         <h2>Gestion des Cartes</h2>
-        <Link to="/admin/cards/new" className="btn btn-add">
-          Ajouter une Carte
-        </Link>
+        <div className="admin-header-actions">
+          <button onClick={handleRefresh} className="btn btn-refresh" disabled={loading}>
+            {loading ? 'Chargement...' : 'Actualiser'}
+          </button>
+          <button onClick={handleHardRefresh} className="btn btn-hard-refresh" disabled={loading}>
+            Actualiser (Hard)
+          </button>
+          <button onClick={handleFixIds} className="btn btn-fix-ids" disabled={loading}>
+            Réparer les IDs
+          </button>
+          <Link to="/admin/cards/new" className="btn btn-add">
+            Ajouter une Carte
+          </Link>
+        </div>
       </div>
 
       <div className="admin-table">
+        <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#333', color: 'white', borderRadius: '5px' }}>
+          <strong>Debug Info:</strong> Total cards: {cards.length},
+          First few IDs: {cards.slice(0, 5).map(c => c.id).join(', ')}
+        </div>
         <table>
           <thead>
             <tr>
@@ -873,8 +931,79 @@ const VariantCardManager = () => {
 
 // Composant principal du panneau d'administration
 const AdminPanel = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+
+      if (token && savedUser) {
+        try {
+          // Verify token validity by making a request to the server
+          const response = await axios.get('http://localhost:5000/api/verify-token', {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+
+          if (response.data.valid) {
+            setIsAuthenticated(true);
+            setUser(JSON.parse(savedUser));
+          } else {
+            // Token is invalid, clear localStorage
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        } catch (error) {
+          console.error('Error verifying token:', error);
+          // If there's an error, assume token is invalid
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
+
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleLoginSuccess = (data) => {
+    setIsAuthenticated(true);
+    setUser(data.user);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  if (loading) {
+    return <div className="admin-panel loading">Chargement...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="admin-panel">
+      <div className="admin-header-bar">
+        <div className="admin-user-info">
+          Connecté en tant que: <strong>{user?.username}</strong>
+          {user?.is_admin && <span className="admin-badge">Admin</span>}
+        </div>
+        <button className="admin-logout-btn" onClick={handleLogout}>
+          Déconnexion
+        </button>
+      </div>
+
       <Routes>
         <Route path="/" element={<AdminHome />} />
         <Route path="/cards" element={<CardManager />} />

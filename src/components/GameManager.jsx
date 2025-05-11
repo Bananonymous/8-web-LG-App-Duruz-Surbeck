@@ -31,8 +31,42 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
 
   // Timer for game duration
   useEffect(() => {
+    // Load saved game time from localStorage if available
+    const savedState = localStorage.getItem('werewolf_game_state') ||
+      sessionStorage.getItem('werewolf_game_state');
+
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState);
+        if (parsedState.gameTime) {
+          console.log('Restoring game time from saved state:', parsedState.gameTime);
+          setGameTime(parsedState.gameTime);
+        }
+      } catch (error) {
+        console.error('Error loading saved game time:', error);
+      }
+    }
+
+    // Start the timer
     const timer = setInterval(() => {
-      setGameTime(prevTime => prevTime + 1);
+      setGameTime(prevTime => {
+        const newTime = prevTime + 1;
+        // Save the updated time to localStorage every 10 seconds to avoid excessive writes
+        if (newTime % 10 === 0) {
+          try {
+            const savedState = localStorage.getItem('werewolf_game_state');
+            if (savedState) {
+              const parsedState = JSON.parse(savedState);
+              parsedState.gameTime = newTime;
+              localStorage.setItem('werewolf_game_state', JSON.stringify(parsedState));
+              sessionStorage.setItem('werewolf_game_state', JSON.stringify(parsedState));
+            }
+          } catch (error) {
+            console.error('Error saving game time:', error);
+          }
+        }
+        return newTime;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
@@ -44,6 +78,9 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
       const initNightPhase = async () => {
         try {
           console.log(`Initializing night phase for night ${currentNight}...`);
+
+          // Reset night victim selection when entering night phase
+          setNightVictim(null);
 
           // Debug: Log all players and their cards before determining night roles
           console.log('All players before determining night roles:', gameConfig.players.map(p => ({
@@ -551,7 +588,6 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
   // Handle discussion phase completion
   const handleDiscussionComplete = () => {
     setShowTimer(false);
-    setGamePhase('execution');
   };
 
   // Handle execution target selection
@@ -818,21 +854,6 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
           {currentRole.card.team === 'Loups-Garous' && (
             <div className="mj-victim-selection">
               <h4>Sélectionner une victime :</h4>
-
-              {/* Current victim info */}
-              <div style={{
-                fontSize: '1rem',
-                color: nightVictim ? '#e74c3c' : '#666',
-                marginBottom: '1rem',
-                padding: '0.5rem',
-                border: nightVictim ? '2px solid #e74c3c' : 'none',
-                borderRadius: '4px',
-                fontWeight: nightVictim ? 'bold' : 'normal'
-              }}>
-                Victime actuelle: {nightVictim
-                  ? (gameConfig.players.find(p => p.id === nightVictim)?.name || `Joueur ${nightVictim} (ID)`)
-                  : 'Aucune'}
-              </div>
 
               <div className="mj-player-grid">
                 {(() => {
@@ -1412,12 +1433,20 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                     Démarrer
                   </button>
                 </div>
-                <button
-                  className="mj-btn mj-btn-secondary"
-                  onClick={handleDiscussionComplete}
-                >
-                  Passer la discussion
-                </button>
+                <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    className="mj-btn mj-btn-secondary"
+                    onClick={handleDiscussionComplete}
+                  >
+                    Annuler le timer
+                  </button>
+                  <button
+                    className="mj-btn"
+                    onClick={() => setGamePhase('execution')}
+                  >
+                    Passer à l'exécution
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1693,7 +1722,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
 
     return () => clearTimeout(saveTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gamePhase, currentNight]);
+  }, [gamePhase, currentNight, victims, executed]);
 
   // Load game state from localStorage on mount
   useEffect(() => {
@@ -1719,7 +1748,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
           // Restore game state
           setGamePhase(parsedState.gamePhase || 'night');
           setCurrentNight(parsedState.currentNight || 1);
-          setGameTime(parsedState.gameTime || 0);
+          // Game time is already set in the timer useEffect
           setVictims(parsedState.victims || []);
           setExecuted(parsedState.executed || []);
           setWitchSaveUsed(parsedState.witchSaveUsed || false);

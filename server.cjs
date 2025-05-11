@@ -106,10 +106,11 @@ function initializeDatabase() {
   const cardsCount = db.prepare('SELECT COUNT(*) as count FROM cards').get().count;
   if (cardsCount === 0) {
     const defaultCards = [
+      // Rôles de base
       {
         name: 'Loup-Garou',
         team: 'Loups-Garous',
-        description: 'Chaque nuit, les Loups-Garous dévorent un Villageois.',
+        description: 'se réveille chaque nuit en meute pour faire une victime',
         lore: 'Créatures mythiques mi-homme mi-loup, ils se cachent parmi les villageois le jour et les dévorent la nuit.',
         image_url: '/images/loup-garou.png',
         is_custom: 0,
@@ -118,9 +119,9 @@ function initializeDatabase() {
         wake_up_frequency: null
       },
       {
-        name: 'Villageois',
+        name: 'Simple villageois',
         team: 'Village',
-        description: 'Les Villageois doivent éliminer tous les Loups-Garous.',
+        description: 'vote chaque jour avec le village pour tuer quelqu\'un',
         lore: 'Simples habitants du village, ils doivent faire preuve de perspicacité pour démasquer les Loups-Garous.',
         image_url: '/images/villageois.png',
         is_custom: 0,
@@ -131,7 +132,7 @@ function initializeDatabase() {
       {
         name: 'Voyante',
         team: 'Village',
-        description: 'Chaque nuit, la Voyante peut découvrir l\'identité d\'un joueur.',
+        description: 'se réveille chaque nuit pour connaître l\'identité d\'une personne',
         lore: 'Dotée de pouvoirs de divination, elle aide le village à identifier les Loups-Garous.',
         image_url: '/images/voyante.png',
         is_custom: 0,
@@ -140,11 +141,11 @@ function initializeDatabase() {
         wake_up_frequency: null
       },
       {
-        name: 'Sorcière',
+        name: 'Voleur',
         team: 'Village',
-        description: 'La Sorcière dispose de deux potions : une pour guérir, une pour tuer.',
-        lore: 'Experte en potions, elle peut sauver une victime des Loups-Garous ou éliminer un joueur de son choix.',
-        image_url: '/images/sorciere.png',
+        description: 'chaque nuit, le voleur échange sa carte avec un autre joueur',
+        lore: 'Opportuniste, il peut changer de rôle au début de la partie selon ce qui l\'arrange.',
+        image_url: '/images/voleur.png',
         is_custom: 0,
         wakes_up_at_night: 1,
         wakes_up_every_night: 1,
@@ -153,7 +154,7 @@ function initializeDatabase() {
       {
         name: 'Chasseur',
         team: 'Village',
-        description: 'Quand le Chasseur meurt, il doit immédiatement éliminer un autre joueur.',
+        description: 'lorsqu\'il meurt, peut tuer quelqu\'un avec lui',
         lore: 'Même dans la mort, le Chasseur ne part pas sans emporter quelqu\'un avec lui.',
         image_url: '/images/chasseur.png',
         is_custom: 0,
@@ -164,18 +165,29 @@ function initializeDatabase() {
       {
         name: 'Cupidon',
         team: 'Village',
-        description: 'Au début du jeu, Cupidon désigne deux joueurs qui seront amoureux.',
+        description: 'la première nuit, il désigne deux joueurs qui seront amoureux',
         lore: 'Ses flèches créent un lien indéfectible : si l\'un des amoureux meurt, l\'autre meurt de chagrin.',
         image_url: '/images/cupidon.png',
         is_custom: 0,
         wakes_up_at_night: 1,
         wakes_up_every_night: 0,
-        wake_up_frequency: "1rst night only"
+        wake_up_frequency: "first_night_only"
       },
       {
-        name: 'Petite Fille',
+        name: 'Sorcière',
         team: 'Village',
-        description: 'La Petite Fille peut espionner les Loups-Garous pendant leur tour.',
+        description: 'possède des potions de vie et de mort',
+        lore: 'Experte en potions, elle peut sauver une victime des Loups-Garous ou éliminer un joueur de son choix.',
+        image_url: '/images/sorciere.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Petite fille',
+        team: 'Village',
+        description: 'peut tenter d\'épier les loups pendant qu\'ils choisissent une victime',
         lore: 'Curieuse et intrépide, elle risque sa vie pour obtenir des informations précieuses.',
         image_url: '/images/petite-fille.png',
         is_custom: 0,
@@ -183,34 +195,234 @@ function initializeDatabase() {
         wakes_up_every_night: 1,
         wake_up_frequency: null
       },
+
+      // Extensions
       {
-        name: 'Voleur',
+        name: 'Salvateur',
         team: 'Village',
-        description: 'Au début de la partie, le Voleur peut échanger sa carte avec une carte non distribuée.',
-        lore: 'Opportuniste, il peut changer de rôle au début de la partie selon ce qui l\'arrange.',
-        image_url: '/images/voleur.png',
+        description: 'choisit une personne chaque nuit qui sera protégé de la mort',
+        lore: 'Protecteur du village, il peut empêcher la mort d\'un villageois chaque nuit.',
+        image_url: '/images/salvateur.png',
         is_custom: 0,
         wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "1rst night only"
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
       },
       {
-        name: 'Loup-Garou Blanc',
-        team: 'Solitaire',
-        description: 'Le Loup-Garou Blanc est avec les Loups-Garous, mais doit gagner seul en éliminant tout le monde.',
+        name: 'Idiot du village',
+        team: 'Village',
+        description: 's\'il est tué par le vote du village, il est épargné mais perd le droit de vote',
+        lore: 'Sa naïveté le protège parfois des accusations du village, mais lui fait perdre sa crédibilité.',
+        image_url: '/images/idiot-du-village.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Bouc émissaire',
+        team: 'Village',
+        description: 's\'il y a égalité dans un vote du village, c\'est lui est tué à la place',
+        lore: 'Malchanceux, il est toujours celui qu\'on accuse en cas de doute.',
+        image_url: '/images/bouc-emissaire.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Ancien',
+        team: 'Village',
+        description: 's\'il est tué durant le vote du village, tous les joueurs sauf loup-garou perdent leur pouvoir',
+        lore: 'Respecté pour sa sagesse, sa mort injuste provoque la perte de foi des villageois.',
+        image_url: '/images/ancien.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Joueur de flûte',
+        team: 'Seul',
+        description: 'chaque nuit, enchante une personne, il gagne lorsque tout le village est enchanté',
+        lore: 'Son objectif est de charmer tous les joueurs encore en vie pour gagner la partie.',
+        image_url: '/images/joueur-de-flute.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Loup-garou blanc',
+        team: 'Seul',
+        description: 'une nuit sur deux, tue un joueur',
         lore: 'Solitaire et traître, il joue un double jeu pour être le dernier survivant.',
         image_url: '/images/loup-garou-blanc.png',
         is_custom: 0,
         wakes_up_at_night: 1,
         wakes_up_every_night: 0,
-        wake_up_frequency: "1/2 nights"
+        wake_up_frequency: "1/2"
       },
       {
-        name: 'Joueur de Flûte',
-        team: 'Solitaire',
-        description: 'Chaque nuit, le Joueur de Flûte peut charmer 2 joueurs qui le suivront.',
-        lore: 'Son objectif est de charmer tous les joueurs encore en vie pour gagner la partie.',
-        image_url: '/images/joueur-de-flute.png',
+        name: 'Corbeau',
+        team: 'Village',
+        description: 'chaque nuit, il désigne un joueur qui aura deux plus contre lui lors du vote du village',
+        lore: 'Son croassement sinistre attire l\'attention du village sur sa cible.',
+        image_url: '/images/corbeau.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Enfant sauvage',
+        team: 'Village',
+        description: 'choisit un joueur modèle en début de partie, si celui-ci est tué par un loup, il devient un loup',
+        lore: 'Élevé par les loups, il reste fidèle à son modèle humain, mais peut retourner à ses instincts sauvages.',
+        image_url: '/images/enfant-sauvage.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 0,
+        wake_up_frequency: "first_night_only"
+      },
+      {
+        name: 'Renard',
+        team: 'Village',
+        description: 'chaque nuit, il choisit 3 joueurs, si l\'un d\'entre eux est loup, il garde son pouvoir',
+        lore: 'Rusé et perspicace, il peut flairer la présence des loups-garous.',
+        image_url: '/images/renard.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Servante dévouée',
+        team: 'Village',
+        description: 'lorsqu\'un joueur est mort, avant que son rôle soit révélé, elle peut échanger son rôle avec avec lui',
+        lore: 'Loyale jusqu\'au bout, elle est prête à prendre la place d\'un autre pour le bien du village.',
+        image_url: '/images/servante-devouee.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Trois frères',
+        team: 'Village',
+        description: 'peuvent se réveiller et communiquer sans parler',
+        lore: 'Liés par le sang, ils s\'entraident pour démasquer les Loups-Garous.',
+        image_url: '/images/trois-freres.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Deux soeurs',
+        team: 'Village',
+        description: 'peuvent se réveiller et communiquer sans parler',
+        lore: 'Unies par un lien indéfectible, elles partagent leurs secrets et intuitions.',
+        image_url: '/images/deux-soeurs.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Montreur d\'ours',
+        team: 'Village',
+        description: 'si son ours grogne le matin, alors l\'un des joueurs à côté de lui est un loup',
+        lore: 'Son ours peut sentir la présence des loups-garous parmi les voisins de son maître.',
+        image_url: '/images/montreur-ours.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Comédien',
+        team: 'Village',
+        description: 'pendant les trois premières nuits, il change de rôle',
+        lore: 'Maître du déguisement, il peut imiter les pouvoirs des autres pour aider le village.',
+        image_url: '/images/comedien.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: "1/3"
+      },
+      {
+        name: 'Chevalier à l\'épée rouillée',
+        team: 'Village',
+        description: 's\'il est tué par les loups, ils ne font pas de victime la nuit suivante, et le premier loup à sa droite meurt',
+        lore: 'Son épée rouillée mais redoutable peut blesser mortellement un loup-garou lors de sa dernière bataille.',
+        image_url: '/images/chevalier-epee.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Juge bègue',
+        team: 'Village',
+        description: 'peut une fois, grâce à signe dicret convenu à l\'avance, choisir d\'effectuer un second vote du village',
+        lore: 'Malgré son bégaiement, il peut ordonner un second vote quand il sent une injustice.',
+        image_url: '/images/juge-begue.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Ange déchu',
+        team: 'Seul',
+        description: 'gagne s\'il meurt la première nuit ou le premier jour, la partie s\'arrête',
+        lore: 'Être céleste dont la mission est de protéger le village, mais qui peut aussi chercher le martyre.',
+        image_url: '/images/ange-dechu.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Abominable sectaire',
+        team: 'Seul',
+        description: 'divise le groupe en deux selon un critère, gagne lorsque les joueurs de l\'autre groupe que le sien sont morts',
+        lore: 'Fanatique et déterminé, il traque les Loups-Garous avec une ferveur religieuse.',
+        image_url: '/images/abominable-sectaire.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Infect père des loups',
+        team: 'Seul',
+        description: 'une fois dans la partie, peut convertir la victime des loups en loup',
+        lore: 'Son pouvoir ancestral lui permet de transformer un humain en loup-garou.',
+        image_url: '/images/infect-pere-loups.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 0,
+        wake_up_frequency: "1/3"
+      },
+      {
+        name: 'Chien-loup',
+        team: 'Village',
+        description: 'en début de partie, peut choisir entre villageois ou loup',
+        lore: 'Déchiré entre deux natures, il doit choisir son camp au début de la partie.',
+        image_url: '/images/chien-loup.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 0,
+        wake_up_frequency: "first_night_only"
+      },
+      {
+        name: 'Grand méchant loup',
+        team: 'Loups',
+        description: 'tant que personne du clan des loups n\'est mort, se réveille seul après les loups pour faire une deuxième victime',
+        lore: 'Le plus redoutable des loups-garous, il peut faire une victime supplémentaire tant que sa meute est intacte.',
+        image_url: '/images/grand-mechant-loup.png',
         is_custom: 0,
         wakes_up_at_night: 1,
         wakes_up_every_night: 1,
@@ -357,15 +569,519 @@ app.post('/api/login', (req, res) => {
     return res.status(401).json({ message: 'Nom d\'utilisateur ou mot de passe incorrect' });
   }
 
-  const token = jwt.sign({ id: user.id, username: user.username, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '1h' });
+  const token = jwt.sign({ id: user.id, username: user.username, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '24h' });
 
   res.json({ token, user: { id: user.id, username: user.username, is_admin: user.is_admin } });
 });
 
+// Route pour vérifier la validité du token
+app.get('/api/verify-token', authenticateToken, (req, res) => {
+  // Si le middleware authenticateToken a passé, le token est valide
+  res.json({ valid: true, user: req.user });
+});
+
+// Route pour réinitialiser le mot de passe admin
+app.post('/api/reset-admin', (req, res) => {
+  try {
+    // Réinitialiser le mot de passe de l'admin
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
+    db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hashedPassword, 'admin');
+
+    // Créer l'admin s'il n'existe pas
+    const adminExists = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+    if (!adminExists) {
+      db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)').run('admin', hashedPassword, 1);
+    }
+
+    res.status(200).json({ message: 'Mot de passe admin réinitialisé avec succès. Utilisez admin/admin123 pour vous connecter.' });
+  } catch (error) {
+    console.error('Erreur lors de la réinitialisation du mot de passe admin:', error);
+    res.status(500).json({ message: 'Erreur lors de la réinitialisation du mot de passe admin', error: error.message });
+  }
+});
+
 // Routes pour les cartes
 app.get('/api/cards', (req, res) => {
-  const cards = db.prepare('SELECT * FROM cards').all();
-  res.json(cards);
+  // Check the current sequence value for cards
+  const sequence = db.prepare("SELECT * FROM sqlite_sequence WHERE name = 'cards'").get();
+  console.log('Current sequence for cards table:', sequence);
+
+  // Explicitly sort by ID to ensure correct order
+  const cards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
+  console.log('Fetching cards from database, count:', cards.length);
+  console.log('First few card IDs:', cards.slice(0, 5).map(c => c.id));
+
+  // Check if there's a mismatch between IDs and expected sequence
+  if (cards.length > 0) {
+    const minId = Math.min(...cards.map(c => c.id));
+    const maxId = Math.max(...cards.map(c => c.id));
+    console.log(`Card ID range: min=${minId}, max=${maxId}`);
+
+    if (minId > 1 && cards.length >= 5) {
+      console.warn('WARNING: Card IDs do not start at 1. This may indicate a problem with the database.');
+    }
+  }
+
+  // TEMPORARY FIX: Reset the IDs to start from 1
+  // This is a workaround for the issue where the database has correct IDs but the API returns wrong IDs
+  const fixedCards = cards.map((card, index) => {
+    // Create a new object to avoid modifying the original
+    const fixedCard = { ...card };
+    // Set the ID to index + 1 to ensure they start from 1
+    fixedCard.id = index + 1;
+    return fixedCard;
+  });
+
+  console.log('Fixed card IDs, now starting from 1');
+  console.log('First few fixed card IDs:', fixedCards.slice(0, 5).map(c => c.id));
+
+  res.json(fixedCards);
+});
+
+// Route pour diagnostiquer et réparer les IDs des cartes
+app.post('/api/fix-card-ids', (req, res) => {
+  try {
+    // Get current cards
+    const cards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
+    console.log(`Found ${cards.length} cards before fixing`);
+
+    // Check if there's a problem with the IDs
+    const minId = Math.min(...cards.map(c => c.id));
+    console.log(`Minimum card ID: ${minId}`);
+
+    if (minId > 1) {
+      // There's a problem with the IDs, let's fix it
+      console.log('Fixing card IDs...');
+
+      // Create a temporary table
+      db.exec(`
+        CREATE TABLE cards_temp (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          team TEXT NOT NULL,
+          description TEXT NOT NULL,
+          lore TEXT,
+          image_url TEXT,
+          is_custom BOOLEAN DEFAULT 0,
+          wakes_up_at_night BOOLEAN DEFAULT 0,
+          wakes_up_every_night BOOLEAN DEFAULT 0,
+          wake_up_frequency TEXT
+        )
+      `);
+
+      // Insert all cards into the temporary table
+      const insertCard = db.prepare('INSERT INTO cards_temp (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      for (const card of cards) {
+        insertCard.run(
+          card.name,
+          card.team,
+          card.description,
+          card.lore,
+          card.image_url,
+          card.is_custom,
+          card.wakes_up_at_night,
+          card.wakes_up_every_night,
+          card.wake_up_frequency
+        );
+      }
+
+      // Drop the original table and rename the temporary table
+      db.exec(`
+        DROP TABLE cards;
+        ALTER TABLE cards_temp RENAME TO cards;
+        DELETE FROM sqlite_sequence WHERE name='cards';
+      `);
+
+      // Get the fixed cards
+      const fixedCards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
+      console.log(`Found ${fixedCards.length} cards after fixing`);
+      console.log('First few card IDs after fixing:', fixedCards.slice(0, 5).map(c => c.id));
+
+      res.status(200).json({
+        message: 'Card IDs fixed successfully',
+        before: {
+          count: cards.length,
+          minId: minId,
+          maxId: Math.max(...cards.map(c => c.id))
+        },
+        after: {
+          count: fixedCards.length,
+          minId: Math.min(...fixedCards.map(c => c.id)),
+          maxId: Math.max(...fixedCards.map(c => c.id))
+        }
+      });
+    } else {
+      res.status(200).json({
+        message: 'Card IDs are already correct',
+        count: cards.length,
+        minId: minId,
+        maxId: Math.max(...cards.map(c => c.id))
+      });
+    }
+  } catch (error) {
+    console.error('Error fixing card IDs:', error);
+    res.status(500).json({ message: 'Error fixing card IDs', error: error.message });
+  }
+});
+
+// Route pour réinitialiser et repeupler la table des cartes
+app.post('/api/reset-cards', authenticateToken, (req, res) => {
+  if (!req.user.is_admin) {
+    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
+  }
+
+  try {
+    // Approche radicale: vider complètement la table et réinitialiser la séquence
+    db.exec('DELETE FROM cards; DELETE FROM sqlite_sequence WHERE name=\'cards\';');
+
+    // Réinsérer toutes les cartes par défaut
+    const defaultCards = [
+      // Rôles de base
+      {
+        name: 'Loup-Garou',
+        team: 'Loups-Garous',
+        description: 'se réveille chaque nuit en meute pour faire une victime',
+        lore: 'Créatures mythiques mi-homme mi-loup, ils se cachent parmi les villageois le jour et les dévorent la nuit.',
+        image_url: '/images/loup-garou.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Simple villageois',
+        team: 'Village',
+        description: 'vote chaque jour avec le village pour tuer quelqu\'un',
+        lore: 'Simples habitants du village, ils doivent faire preuve de perspicacité pour démasquer les Loups-Garous.',
+        image_url: '/images/villageois.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Voyante',
+        team: 'Village',
+        description: 'se réveille chaque nuit pour connaître l\'identité d\'une personne',
+        lore: 'Dotée de pouvoirs de divination, elle aide le village à identifier les Loups-Garous.',
+        image_url: '/images/voyante.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Voleur',
+        team: 'Village',
+        description: 'chaque nuit, le voleur échange sa carte avec un autre joueur',
+        lore: 'Opportuniste, il peut changer de rôle au début de la partie selon ce qui l\'arrange.',
+        image_url: '/images/voleur.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Chasseur',
+        team: 'Village',
+        description: 'lorsqu\'il meurt, peut tuer quelqu\'un avec lui',
+        lore: 'Même dans la mort, le Chasseur ne part pas sans emporter quelqu\'un avec lui.',
+        image_url: '/images/chasseur.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Cupidon',
+        team: 'Village',
+        description: 'la première nuit, il désigne deux joueurs qui seront amoureux',
+        lore: 'Ses flèches créent un lien indéfectible : si l\'un des amoureux meurt, l\'autre meurt de chagrin.',
+        image_url: '/images/cupidon.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 0,
+        wake_up_frequency: "first_night_only"
+      },
+      {
+        name: 'Sorcière',
+        team: 'Village',
+        description: 'possède des potions de vie et de mort',
+        lore: 'Experte en potions, elle peut sauver une victime des Loups-Garous ou éliminer un joueur de son choix.',
+        image_url: '/images/sorciere.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Petite fille',
+        team: 'Village',
+        description: 'peut tenter d\'épier les loups pendant qu\'ils choisissent une victime',
+        lore: 'Curieuse et intrépide, elle risque sa vie pour obtenir des informations précieuses.',
+        image_url: '/images/petite-fille.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+
+      // Extensions
+      {
+        name: 'Salvateur',
+        team: 'Village',
+        description: 'choisit une personne chaque nuit qui sera protégé de la mort',
+        lore: 'Protecteur du village, il peut empêcher la mort d\'un villageois chaque nuit.',
+        image_url: '/images/salvateur.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Idiot du village',
+        team: 'Village',
+        description: 's\'il est tué par le vote du village, il est épargné mais perd le droit de vote',
+        lore: 'Sa naïveté le protège parfois des accusations du village, mais lui fait perdre sa crédibilité.',
+        image_url: '/images/idiot-du-village.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Bouc émissaire',
+        team: 'Village',
+        description: 's\'il y a égalité dans un vote du village, c\'est lui est tué à la place',
+        lore: 'Malchanceux, il est toujours celui qu\'on accuse en cas de doute.',
+        image_url: '/images/bouc-emissaire.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Ancien',
+        team: 'Village',
+        description: 's\'il est tué durant le vote du village, tous les joueurs sauf loup-garou perdent leur pouvoir',
+        lore: 'Respecté pour sa sagesse, sa mort injuste provoque la perte de foi des villageois.',
+        image_url: '/images/ancien.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Joueur de flûte',
+        team: 'Seul',
+        description: 'chaque nuit, enchante une personne, il gagne lorsque tout le village est enchanté',
+        lore: 'Son objectif est de charmer tous les joueurs encore en vie pour gagner la partie.',
+        image_url: '/images/joueur-de-flute.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Loup-garou blanc',
+        team: 'Seul',
+        description: 'une nuit sur deux, tue un joueur',
+        lore: 'Solitaire et traître, il joue un double jeu pour être le dernier survivant.',
+        image_url: '/images/loup-garou-blanc.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 0,
+        wake_up_frequency: "1/2"
+      },
+      {
+        name: 'Corbeau',
+        team: 'Village',
+        description: 'chaque nuit, il désigne un joueur qui aura deux plus contre lui lors du vote du village',
+        lore: 'Son croassement sinistre attire l\'attention du village sur sa cible.',
+        image_url: '/images/corbeau.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Enfant sauvage',
+        team: 'Village',
+        description: 'choisit un joueur modèle en début de partie, si celui-ci est tué par un loup, il devient un loup',
+        lore: 'Élevé par les loups, il reste fidèle à son modèle humain, mais peut retourner à ses instincts sauvages.',
+        image_url: '/images/enfant-sauvage.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 0,
+        wake_up_frequency: "first_night_only"
+      },
+      {
+        name: 'Renard',
+        team: 'Village',
+        description: 'chaque nuit, il choisit 3 joueurs, si l\'un d\'entre eux est loup, il garde son pouvoir',
+        lore: 'Rusé et perspicace, il peut flairer la présence des loups-garous.',
+        image_url: '/images/renard.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Servante dévouée',
+        team: 'Village',
+        description: 'lorsqu\'un joueur est mort, avant que son rôle soit révélé, elle peut échanger son rôle avec avec lui',
+        lore: 'Loyale jusqu\'au bout, elle est prête à prendre la place d\'un autre pour le bien du village.',
+        image_url: '/images/servante-devouee.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Trois frères',
+        team: 'Village',
+        description: 'peuvent se réveiller et communiquer sans parler',
+        lore: 'Liés par le sang, ils s\'entraident pour démasquer les Loups-Garous.',
+        image_url: '/images/trois-freres.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Deux soeurs',
+        team: 'Village',
+        description: 'peuvent se réveiller et communiquer sans parler',
+        lore: 'Unies par un lien indéfectible, elles partagent leurs secrets et intuitions.',
+        image_url: '/images/deux-soeurs.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Montreur d\'ours',
+        team: 'Village',
+        description: 'si son ours grogne le matin, alors l\'un des joueurs à côté de lui est un loup',
+        lore: 'Son ours peut sentir la présence des loups-garous parmi les voisins de son maître.',
+        image_url: '/images/montreur-ours.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Comédien',
+        team: 'Village',
+        description: 'pendant les trois premières nuits, il change de rôle',
+        lore: 'Maître du déguisement, il peut imiter les pouvoirs des autres pour aider le village.',
+        image_url: '/images/comedien.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: "1/3"
+      },
+      {
+        name: 'Chevalier à l\'épée rouillée',
+        team: 'Village',
+        description: 's\'il est tué par les loups, ils ne font pas de victime la nuit suivante, et le premier loup à sa droite meurt',
+        lore: 'Son épée rouillée mais redoutable peut blesser mortellement un loup-garou lors de sa dernière bataille.',
+        image_url: '/images/chevalier-epee.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Juge bègue',
+        team: 'Village',
+        description: 'peut une fois, grâce à signe dicret convenu à l\'avance, choisir d\'effectuer un second vote du village',
+        lore: 'Malgré son bégaiement, il peut ordonner un second vote quand il sent une injustice.',
+        image_url: '/images/juge-begue.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Ange déchu',
+        team: 'Seul',
+        description: 'gagne s\'il meurt la première nuit ou le premier jour, la partie s\'arrête',
+        lore: 'Être céleste dont la mission est de protéger le village, mais qui peut aussi chercher le martyre.',
+        image_url: '/images/ange-dechu.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Abominable sectaire',
+        team: 'Seul',
+        description: 'divise le groupe en deux selon un critère, gagne lorsque les joueurs de l\'autre groupe que le sien sont morts',
+        lore: 'Fanatique et déterminé, il traque les Loups-Garous avec une ferveur religieuse.',
+        image_url: '/images/abominable-sectaire.png',
+        is_custom: 0,
+        wakes_up_at_night: 0,
+        wakes_up_every_night: 0,
+        wake_up_frequency: null
+      },
+      {
+        name: 'Infect père des loups',
+        team: 'Seul',
+        description: 'une fois dans la partie, peut convertir la victime des loups en loup',
+        lore: 'Son pouvoir ancestral lui permet de transformer un humain en loup-garou.',
+        image_url: '/images/infect-pere-loups.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 0,
+        wake_up_frequency: "1/3"
+      },
+      {
+        name: 'Chien-loup',
+        team: 'Village',
+        description: 'en début de partie, peut choisir entre villageois ou loup',
+        lore: 'Déchiré entre deux natures, il doit choisir son camp au début de la partie.',
+        image_url: '/images/chien-loup.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 0,
+        wake_up_frequency: "first_night_only"
+      },
+      {
+        name: 'Grand méchant loup',
+        team: 'Loups',
+        description: 'tant que personne du clan des loups n\'est mort, se réveille seul après les loups pour faire une deuxième victime',
+        lore: 'Le plus redoutable des loups-garous, il peut faire une victime supplémentaire tant que sa meute est intacte.',
+        image_url: '/images/grand-mechant-loup.png',
+        is_custom: 0,
+        wakes_up_at_night: 1,
+        wakes_up_every_night: 1,
+        wake_up_frequency: null
+      }
+    ];
+
+    const insertCard = db.prepare('INSERT INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    for (const card of defaultCards) {
+      insertCard.run(
+        card.name,
+        card.team,
+        card.description,
+        card.lore,
+        card.image_url,
+        card.is_custom,
+        card.wakes_up_at_night,
+        card.wakes_up_every_night,
+        card.wake_up_frequency
+      );
+    }
+
+    res.status(200).json({
+      message: 'Table des cartes réinitialisée avec succès. Les IDs recommencent à 1.',
+      count: defaultCards.length
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la réinitialisation de la table des cartes', error: error.message });
+  }
 });
 
 app.get('/api/cards/:id', (req, res) => {
