@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import VariantList from './components/VariantList';
 import VariantLore from './components/VariantLore';
 import VariantCardDetail from './components/VariantCardDetail';
+import MJPage from './components/MJPage';
 
 // Contextes
 import { AuthProvider } from './context/AuthContext';
@@ -35,6 +36,7 @@ function App() {
                 <Route path="/variants/:id" element={<VariantList />} />
                 <Route path="/variants/:id/lore" element={<VariantLore />} />
                 <Route path="/variant-cards/:id" element={<VariantCardDetail />} />
+                <Route path="/mj" element={<MJPage />} />
                 <Route
                   path="/admin/*"
                   element={

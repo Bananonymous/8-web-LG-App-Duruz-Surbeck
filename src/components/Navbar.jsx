@@ -54,6 +54,7 @@ const Navbar = () => {
           <Link to="/cards" className={isActive('/cards')}>Cartes</Link>
           <NavDropdown title="Variantes" items={variantItems} />
           <Link to="/calendar" className={isActive('/calendar')}>Calendrier</Link>
+          <Link to="/mj" className={isActive('/mj')}>MJ</Link>
           {currentUser ? (
             <>
               {currentUser.is_admin && <Link to="/admin" className={isActive('/admin')}>Admin</Link>}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AdminPanel.css';
+import WakeUpOrderConfig from './WakeUpOrderConfig';
 
 // Sous-composants pour l'administration
 const AdminHome = () => {
@@ -19,6 +20,9 @@ const AdminHome = () => {
         </Link>
         <Link to="/admin/variants" className="btn">
           Gérer les Variantes
+        </Link>
+        <Link to="/admin/wake-up-order" className="btn">
+          Ordre de Réveil
         </Link>
       </div>
     </div>
@@ -885,6 +889,7 @@ const AdminPanel = () => {
         <Route path="/variant-cards/:id" element={<VariantCardManager />} />
         <Route path="/variant-cards/:id/new" element={<VariantCardForm />} />
         <Route path="/variant-cards/:id/edit/:cardId" element={<VariantCardForm />} />
+        <Route path="/wake-up-order" element={<WakeUpOrderConfig />} />
       </Routes>
     </div>
   );

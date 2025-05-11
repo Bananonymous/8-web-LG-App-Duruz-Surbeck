@@ -1,0 +1,1060 @@
+.mj-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.mj-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.mj-header h1 {
+  font-size: 2.5rem;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+}
+
+.mj-subtitle {
+  font-size: 1.2rem;
+  color: var(--secondary-color);
+  margin-bottom: 2rem;
+}
+
+.mj-card {
+  background-color: var(--card-background);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mj-card h2 {
+  font-size: 1.8rem;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--secondary-color);
+  padding-bottom: 0.5rem;
+}
+
+.mj-btn {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 0.5rem;
+}
+
+.mj-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.mj-btn-secondary {
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+}
+
+.mj-btn-danger {
+  background-color: var(--btn-delete-bg);
+  color: var(--btn-delete-text);
+}
+
+.mj-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.mj-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.mj-form-group select,
+.mj-form-group input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+}
+
+.mj-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+}
+
+.mj-warning {
+  background-color: rgba(255, 193, 7, 0.2);
+  border-left: 4px solid #ffc107;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+.mj-error {
+  background-color: rgba(220, 53, 69, 0.2);
+  border-left: 4px solid #dc3545;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+.mj-phase-indicator {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.mj-night-phase {
+  background-color: #343a40;
+  color: white;
+}
+
+.mj-morning-phase {
+  background-color: #ffc107;
+  color: black;
+}
+
+.mj-discussion-phase {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.mj-execution-phase {
+  background-color: #dc3545;
+  color: white;
+}
+
+.mj-night-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mj-wake-up-order {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mj-wake-up-order h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.mj-wake-up-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mj-wake-up-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.mj-wake-up-item.current {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: bold;
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.mj-wake-up-item.completed {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.mj-wake-up-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  margin-right: 10px;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.mj-wake-up-role-name {
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.mj-wake-up-player-name {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.mj-wake-up-order-number,
+.mj-wake-up-admin-order {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-left: 8px;
+  color: #ffc107;
+}
+
+.mj-wake-up-admin-order {
+  margin-left: auto;
+  color: #17a2b8;
+}
+
+.mj-hunter-phase {
+  background-color: #fd7e14;
+  color: white;
+}
+
+/* Card selection */
+.mj-card-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.mj-card-item {
+  background-color: var(--card-background);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.mj-card-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.mj-card-item.selected {
+  border: 2px solid var(--primary-color);
+  background-color: rgba(var(--accent-color-rgb), 0.1);
+}
+
+.mj-card-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.mj-card-item-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.mj-card-team {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.mj-card-team.loups-garous {
+  background-color: #dc3545;
+  color: white;
+}
+
+.mj-card-team.village {
+  background-color: #28a745;
+  color: white;
+}
+
+.mj-card-team.solitaire {
+  background-color: #9c27b0;
+  color: white;
+}
+
+.mj-card-description {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  color: var(--text-color);
+}
+
+.mj-card-variant-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.mj-card-variant-badge-small {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.mj-card-team-small {
+  display: inline-block;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.mj-card-count {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background-color: var(--accent-color);
+  color: black;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.mj-selected-cards {
+  margin-bottom: 1.5rem;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.mj-selected-cards h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.mj-selected-cards-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mj-selected-card {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.mj-selected-card-name {
+  font-weight: 500;
+}
+
+.mj-selected-card-remove {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  padding: 0 0.3rem;
+}
+
+.mj-selected-card-remove:hover {
+  color: var(--primary-color);
+}
+
+.mj-checkbox-container {
+  display: flex;
+  align-items: center;
+}
+
+.mj-checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.mj-checkbox {
+  margin-right: 0.5rem;
+}
+
+.mj-setup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mj-setup-action {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mj-setup-action-desc {
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+}
+
+.mj-btn-toggle {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mj-btn-toggle.active {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+/* Player setup */
+.mj-players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.mj-player-item {
+  background-color: var(--card-background);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.mj-player-header {
+  margin-bottom: 0.5rem;
+}
+
+.mj-player-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.mj-player-card-select select {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+}
+
+.mj-player-card-info {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mj-player-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.mj-player-card-name {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.mj-checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.mj-checkbox-group input {
+  margin-right: 0.5rem;
+}
+
+.mj-actions-top {
+  margin-bottom: 1rem;
+}
+
+/* Game manager */
+.mj-game-manager {
+  width: 100%;
+}
+
+.mj-game-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: var(--card-background);
+  border-radius: 8px;
+}
+
+.mj-game-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.mj-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mj-stat-label {
+  font-size: 0.9rem;
+  color: var(--secondary-color);
+}
+
+.mj-stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.mj-phase {
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.mj-phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.mj-info-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.mj-role-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.mj-role-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.mj-role-position {
+  background-color: var(--primary-color);
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-right: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.mj-role-header h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.mj-role-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+}
+
+.mj-victim-selection,
+.mj-witch-actions,
+.mj-voyante-action,
+.mj-flutist-action,
+.mj-cupidon-action,
+.mj-default-role-action {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mj-werewolf-info {
+  margin-top: 1.5rem;
+  background-color: rgba(220, 53, 69, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.mj-werewolf-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.mj-werewolf-item {
+  background-color: rgba(220, 53, 69, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.mj-witch-potions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mj-witch-potion {
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  position: relative;
+}
+
+.mj-witch-potion.used {
+  opacity: 0.7;
+}
+
+.mj-witch-potion.used::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.mj-witch-save,
+.mj-witch-kill {
+  margin-top: 1rem;
+}
+
+.mj-witch-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.mj-witch-continue {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.mj-voyante-player {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mj-voyante-player:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.mj-voyante-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.mj-revealed-card-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.mj-revealed-card-image-large {
+  text-align: center;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.mj-revealed-card-image-large img {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 8px;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+}
+
+.mj-revealed-card-name-large {
+  font-size: 5rem;
+  font-weight: bold;
+  text-align: center;
+  color: var(--primary-color);
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  padding: 2rem;
+}
+
+.mj-revealed-card-tap {
+  position: absolute;
+  bottom: 2rem;
+  width: 100%;
+  text-align: center;
+  font-size: 1.2rem;
+  opacity: 0.7;
+}
+
+.mj-player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.mj-player-grid .mj-player-item {
+  cursor: pointer;
+  text-align: center;
+  padding: 0.8rem;
+}
+
+.mj-player-grid .mj-player-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.mj-player-grid .mj-player-item.selected {
+  border: 2px solid var(--primary-color);
+  background-color: rgba(var(--accent-color-rgb), 0.1);
+}
+
+.mj-victims-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.mj-victim-info {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.mj-werewolf-victim {
+  background-color: rgba(220, 53, 69, 0.2);
+}
+
+.mj-witch-victim {
+  background-color: rgba(156, 39, 176, 0.2);
+}
+
+.mj-victim-saved {
+  text-align: center;
+  padding: 1rem;
+  background-color: rgba(40, 167, 69, 0.2);
+  border-radius: 8px;
+}
+
+.mj-victim-info h4 {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin: 0.5rem 0;
+}
+
+.mj-victim-item {
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mj-victim-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.mj-victim-role {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 0.3rem;
+}
+
+.mj-hunter-actions,
+.mj-execution-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
+
+.mj-execution-mode {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mj-player-name {
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+
+.mj-player-role {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.mj-timer-selection {
+  margin-top: 1rem;
+}
+
+.mj-timer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.mj-timer-buttons button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mj-timer-buttons button:hover {
+  opacity: 0.9;
+}
+
+.mj-custom-timer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mj-custom-timer-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mj-custom-timer-input input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+}
+
+.mj-game-over {
+  background-color: var(--card-background);
+  text-align: center;
+}
+
+.mj-game-over .mj-phase-indicator {
+  background-color: var(--primary-color);
+}
+
+.mj-game-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mj-control-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+/* Modal */
+.mj-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.mj-modal-content {
+  background-color: var(--card-background);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.mj-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mj-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.mj-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.mj-modal-body {
+  padding: 1rem;
+}
+
+.mj-remaining-players {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.mj-remaining-player {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.mj-remaining-player-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.mj-remaining-player-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mj-remaining-player-role {
+  font-size: 0.9rem;
+}
+
+/* Dead role alert */
+.mj-dead-role-alert {
+  background-color: #fd7e14;
+  color: white;
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin: 0.5rem 0 1rem;
+  text-align: center;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .mj-container {
+    padding: 1rem;
+  }
+
+  .mj-game-info {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .mj-game-stats {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .mj-phase-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .mj-witch-potions {
+    grid-template-columns: 1fr;
+  }
+
+  .mj-execution-mode {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .mj-execution-mode button {
+    width: 100%;
+  }
+
+  .mj-player-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .mj-revealed-card-name-large {
+    font-size: 3rem;
+  }
+
+  .mj-timer-buttons {
+    flex-direction: column;
+  }
+
+  .mj-timer-buttons button {
+    width: 100%;
+  }
+
+  .mj-custom-timer-input {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .mj-custom-timer-input button {
+    width: 100%;
+  }
+
+  .mj-modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .mj-remaining-players {
+    grid-template-columns: 1fr;
+  }
+}

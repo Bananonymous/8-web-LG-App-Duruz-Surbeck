@@ -84,6 +84,16 @@ function initializeDatabase() {
     )
   `);
 
+  // Création de la table pour l'ordre de réveil des rôles
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS wake_up_order (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      variant_id TEXT NOT NULL,
+      include_base BOOLEAN DEFAULT 1,
+      order_data TEXT NOT NULL
+    )
+  `);
+
   // Vérifier si un admin existe déjà, sinon en créer un
   const adminExists = db.prepare('SELECT * FROM users WHERE is_admin = 1 LIMIT 1').get();
   if (!adminExists) {
@@ -721,6 +731,93 @@ app.delete('/api/variant-cards/:id', authenticateToken, (req, res) => {
     res.json({ message: 'Carte de variante supprimée avec succès' });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la suppression de la carte de variante', error: error.message });
+  }
+});
+
+// Routes pour l'ordre de réveil des rôles
+app.get('/api/wake-up-order/:variantId', (req, res) => {
+  const { variantId } = req.params;
+  const includeBase = req.query.includeBase === 'true';
+
+  console.log(`Fetching wake-up order for variant: ${variantId}, includeBase: ${includeBase}`);
+
+  try {
+    // Rechercher l'ordre de réveil pour cette variante et cette configuration
+    const wakeUpOrder = db.prepare('SELECT * FROM wake_up_order WHERE variant_id = ? AND include_base = ?').get(
+      variantId,
+      includeBase ? 1 : 0
+    );
+
+    if (wakeUpOrder) {
+      // Convertir la chaîne JSON en objet
+      const orderData = JSON.parse(wakeUpOrder.order_data);
+      console.log('Found wake-up order:', orderData);
+
+      // Sort the order data by the order field
+      const sortedOrderData = [...orderData].sort((a, b) => a.order - b.order);
+      console.log('Sorted wake-up order:', sortedOrderData);
+
+      res.json({ order: sortedOrderData });
+    } else {
+      // Aucun ordre trouvé
+      console.log('No wake-up order found');
+      res.json({ order: [] });
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'ordre de réveil:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération de l\'ordre de réveil', error: error.message });
+  }
+});
+
+app.post('/api/wake-up-order', (req, res) => {
+  const { variant_id, include_base, order } = req.body;
+
+  try {
+    // Validate the order data
+    if (!Array.isArray(order)) {
+      return res.status(400).json({ message: 'L\'ordre doit être un tableau' });
+    }
+
+    // Ensure we only store the essential data (id, name, order)
+    const simplifiedOrder = order.map(item => ({
+      id: item.id,
+      name: item.name,
+      order: item.order
+    }));
+
+    console.log('Saving wake-up order:', {
+      variant_id,
+      include_base: include_base ? 1 : 0,
+      order: simplifiedOrder
+    });
+
+    // Vérifier si un ordre existe déjà pour cette variante et cette configuration
+    const existingOrder = db.prepare('SELECT id FROM wake_up_order WHERE variant_id = ? AND include_base = ?').get(
+      variant_id,
+      include_base ? 1 : 0
+    );
+
+    if (existingOrder) {
+      // Mettre à jour l'ordre existant
+      db.prepare('UPDATE wake_up_order SET order_data = ? WHERE id = ?').run(
+        JSON.stringify(simplifiedOrder),
+        existingOrder.id
+      );
+      console.log(`Updated wake-up order with ID ${existingOrder.id}`);
+    } else {
+      // Créer un nouvel ordre
+      const result = db.prepare('INSERT INTO wake_up_order (variant_id, include_base, order_data) VALUES (?, ?, ?)').run(
+        variant_id,
+        include_base ? 1 : 0,
+        JSON.stringify(simplifiedOrder)
+      );
+      console.log(`Created new wake-up order with ID ${result.lastInsertRowid}`);
+    }
+
+    res.json({ message: 'Ordre de réveil sauvegardé avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde de l\'ordre de réveil:', error);
+    res.status(500).json({ message: 'Erreur lors de la sauvegarde de l\'ordre de réveil', error: error.message });
   }
 });
 

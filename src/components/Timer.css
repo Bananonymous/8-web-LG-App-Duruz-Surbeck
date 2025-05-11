@@ -1,0 +1,43 @@
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timer-display {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+.timer-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.timer-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.timer-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.timer-btn-cancel {
+  background-color: var(--btn-delete-bg);
+  color: var(--btn-delete-text);
+}
