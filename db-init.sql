@@ -89,7 +89,7 @@ VALUES
 '/images/loup_alpha.svg', 1, 0, '1/3 nights');
 
 -- Insert base game cards
-INSERT OR IGNORE INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency)
+INSERT OR REPLACE INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency)
 VALUES
 -- Village team
 ('Simple villageois', 'Village', 'vote chaque jour avec le village pour tuer quelqu''un',

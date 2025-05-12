@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import './AdminPanel.css';
 
@@ -12,6 +12,9 @@ const WakeUpOrderConfig = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isDragMode, setIsDragMode] = useState(true); // Default to drag mode
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [draggedOverItem, setDraggedOverItem] = useState(null);
 
   // Fetch variants and cards
   useEffect(() => {
@@ -192,6 +195,133 @@ const WakeUpOrderConfig = () => {
     setWakeUpOrder(sortedOrder);
   };
 
+
+
+  // Toggle between drag mode and manual input mode
+  const toggleDragMode = () => {
+    setIsDragMode(!isDragMode);
+  };
+
+  // Handle drag start
+  const handleDragStart = (e, item, index) => {
+    console.log('Drag start:', item.name, index);
+    setDraggedItem(item);
+    // Set data for drag operation
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+    // Add a class to the dragged element
+    e.target.classList.add('dragging');
+  };
+
+  // Handle drag over
+  const handleDragOver = (e, item) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    // Only update if we're dragging over a different item
+    if (!draggedOverItem || draggedOverItem.id !== item.id) {
+      setDraggedOverItem(item);
+    }
+  };
+
+  // Handle drag end
+  const handleDragEnd = (e) => {
+    console.log('Drag end');
+    e.target.classList.remove('dragging');
+    setDraggedItem(null);
+    setDraggedOverItem(null);
+  };
+
+  // Handle drop
+  const handleDrop = (e, targetItem, targetIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItem) {
+      console.log('No dragged item found');
+      return;
+    }
+
+    console.log('Drop:', draggedItem.name, 'onto', targetItem.name);
+
+    try {
+      // Find the source index
+      const sourceIndex = wakeUpOrder.findIndex(item => item.id === draggedItem.id);
+
+      if (sourceIndex === -1) {
+        console.error('Source item not found in the list');
+        return;
+      }
+
+      // If dropped on itself, do nothing
+      if (sourceIndex === targetIndex) {
+        console.log('Dropped on self, no change');
+        return;
+      }
+
+      // Create a copy of the current wake-up order
+      const newOrder = [...wakeUpOrder];
+
+      // Remove the dragged item from the array
+      const [movedItem] = newOrder.splice(sourceIndex, 1);
+
+      // Insert the dragged item at the new position
+      newOrder.splice(targetIndex, 0, movedItem);
+
+      // Update the order numbers based on the new positions
+      const updatedOrder = newOrder.map((item, index) => ({
+        ...item,
+        order: index + 1
+      }));
+
+      console.log('Updated order after drop:', updatedOrder);
+
+      // Update the state with the new order
+      setWakeUpOrder(updatedOrder);
+    } catch (error) {
+      console.error('Error during drop operation:', error);
+    } finally {
+      // Reset drag state
+      setDraggedItem(null);
+      setDraggedOverItem(null);
+    }
+  };
+
+  // Handle moving an item up in the list
+  const handleMoveUp = (index) => {
+    if (index === 0) return; // Already at the top
+
+    const newOrder = [...wakeUpOrder];
+    // Swap the item with the one above it
+    [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
+
+    // Update the order numbers
+    const updatedOrder = newOrder.map((item, idx) => ({
+      ...item,
+      order: idx + 1
+    }));
+
+    setWakeUpOrder(updatedOrder);
+  };
+
+  // Handle moving an item down in the list
+  const handleMoveDown = (index) => {
+    if (index === wakeUpOrder.length - 1) return; // Already at the bottom
+
+    const newOrder = [...wakeUpOrder];
+    // Swap the item with the one below it
+    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+
+    // Update the order numbers
+    const updatedOrder = newOrder.map((item, idx) => ({
+      ...item,
+      order: idx + 1
+    }));
+
+    setWakeUpOrder(updatedOrder);
+  };
+
   // Save wake-up order
   const saveWakeUpOrder = async () => {
     try {
@@ -293,13 +423,43 @@ const WakeUpOrderConfig = () => {
 
       <div className="admin-wake-up-order">
         <h3 className="admin-wake-up-title">Ordre de réveil des rôles</h3>
-        <p className="admin-help-text">
-          Entrez un numéro pour chaque rôle pour définir son ordre de réveil pendant la nuit.
-          Les numéros les plus petits seront appelés en premier.
-        </p>
+
+        {isDragMode ? (
+          <p className="admin-help-text">
+            Cliquez et glissez les cartes pour les réorganiser dans la grille.
+            L'ordre est déterminé de gauche à droite, puis de haut en bas.
+            Les rôles avec les numéros les plus petits seront appelés en premier pendant la nuit.
+          </p>
+        ) : (
+          <p className="admin-help-text">
+            Entrez un numéro pour chaque rôle pour définir son ordre de réveil pendant la nuit.
+            Les numéros les plus petits seront appelés en premier.
+          </p>
+        )}
+
         <p className="admin-help-text">
           Cet ordre sera utilisé par le Maître du Jeu lors de la phase de nuit.
         </p>
+
+        <div className="admin-mode-toggle">
+          <div className="admin-toggle-label">Mode de configuration:</div>
+          <div className="admin-toggle-buttons">
+            <button
+              className={`admin-btn-toggle ${isDragMode ? 'active' : ''}`}
+              onClick={() => setIsDragMode(true)}
+            >
+              <span className="admin-toggle-icon">↕️</span> Glisser-déposer
+              {isDragMode && <span className="admin-toggle-check">✓</span>}
+            </button>
+            <button
+              className={`admin-btn-toggle ${!isDragMode ? 'active' : ''}`}
+              onClick={() => setIsDragMode(false)}
+            >
+              <span className="admin-toggle-icon">🔢</span> Numéros manuels
+              {!isDragMode && <span className="admin-toggle-check">✓</span>}
+            </button>
+          </div>
+        </div>
 
         {loading ? (
           <div className="admin-loading">Chargement...</div>
@@ -307,25 +467,52 @@ const WakeUpOrderConfig = () => {
           <>
             <div className="admin-wake-up-container">
               {Array.isArray(wakeUpOrder) && wakeUpOrder.length > 0 ? (
-                <div className="admin-wake-up-grid">
-                  {wakeUpOrder.map((item) => (
-                    <div key={item.id} className={`admin-wake-up-card ${item.isVariant ? 'variant' : ''}`}>
-                      <div className="admin-wake-up-order-input">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.order}
-                          onChange={(e) => handleOrderChange(item.id, e.target.value)}
-                          className="admin-order-input"
-                        />
+                isDragMode ? (
+                  <div className="admin-drag-list">
+                    {wakeUpOrder.map((item, index) => (
+                      <div
+                        key={`item-${item.id}`}
+                        className={`admin-wake-up-card-draggable ${item.isVariant ? 'variant' : ''} ${draggedItem && draggedItem.id === item.id ? 'dragging' : ''} ${draggedOverItem && draggedOverItem.id === item.id ? 'drag-over' : ''}`}
+                        draggable="true"
+                        onDragStart={(e) => handleDragStart(e, item, index)}
+                        onDragOver={(e) => handleDragOver(e, item)}
+                        onDragEnter={(e) => e.preventDefault()}
+                        onDragEnd={handleDragEnd}
+                        onDrop={(e) => handleDrop(e, item, index)}
+                      >
+                        <div className="admin-wake-up-order-badge">{index + 1}</div>
+                        <div className="admin-wake-up-name">{item.name}</div>
+                        <div className="admin-drag-handle" title="Glisser pour réorganiser">
+                          <span className="admin-drag-icon">↕️</span>
+                          <span className="admin-drag-text">Glisser</span>
+                        </div>
+                        {item.isVariant && (
+                          <div className="admin-wake-up-variant-badge">Variante</div>
+                        )}
                       </div>
-                      <div className="admin-wake-up-name">{item.name}</div>
-                      {item.isVariant && (
-                        <div className="admin-wake-up-variant-badge">Variante</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="admin-wake-up-grid">
+                    {wakeUpOrder.map((item) => (
+                      <div key={item.id} className={`admin-wake-up-card ${item.isVariant ? 'variant' : ''}`}>
+                        <div className="admin-wake-up-order-input">
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.order}
+                            onChange={(e) => handleOrderChange(item.id, e.target.value)}
+                            className="admin-order-input"
+                          />
+                        </div>
+                        <div className="admin-wake-up-name">{item.name}</div>
+                        {item.isVariant && (
+                          <div className="admin-wake-up-variant-badge">Variante</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
               ) : (
                 <div className="admin-wake-up-empty">
                   Aucun rôle à afficher. Veuillez sélectionner une variante avec des rôles qui se réveillent la nuit.

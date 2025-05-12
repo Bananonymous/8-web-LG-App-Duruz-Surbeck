@@ -94,36 +94,27 @@ app.get('/api/cards', (req, res) => {
   const sequence = db.prepare("SELECT * FROM sqlite_sequence WHERE name = 'cards'").get();
   console.log('Current sequence for cards table:', sequence);
 
-  // Explicitly sort by ID to ensure correct order
-  const cards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
-  console.log('Fetching cards from database, count:', cards.length);
-  console.log('First few card IDs:', cards.slice(0, 5).map(c => c.id));
+  // Get all cards from the database, removing duplicates by name
+  const allCards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
+  console.log('Fetching cards from database, count:', allCards.length);
 
-  // Check if there's a mismatch between IDs and expected sequence
-  if (cards.length > 0) {
-    const minId = Math.min(...cards.map(c => c.id));
-    const maxId = Math.max(...cards.map(c => c.id));
-    console.log(`Card ID range: min=${minId}, max=${maxId}`);
+  // Create a map to store unique cards by name
+  const uniqueCardsMap = new Map();
 
-    if (minId > 1 && cards.length >= 5) {
-      console.warn('WARNING: Card IDs do not start at 1. This may indicate a problem with the database.');
+  // Keep only the first occurrence of each card name
+  allCards.forEach(card => {
+    if (!uniqueCardsMap.has(card.name)) {
+      uniqueCardsMap.set(card.name, card);
     }
-  }
-
-  // TEMPORARY FIX: Reset the IDs to start from 1
-  // This is a workaround for the issue where the database has correct IDs but the API returns wrong IDs
-  const fixedCards = cards.map((card, index) => {
-    // Create a new object to avoid modifying the original
-    const fixedCard = { ...card };
-    // Set the ID to index + 1 to ensure they start from 1
-    fixedCard.id = index + 1;
-    return fixedCard;
   });
 
-  console.log('Fixed card IDs, now starting from 1');
-  console.log('First few fixed card IDs:', fixedCards.slice(0, 5).map(c => c.id));
+  // Convert the map back to an array
+  const uniqueCards = Array.from(uniqueCardsMap.values());
 
-  res.json(fixedCards);
+  console.log('Unique cards count:', uniqueCards.length);
+  console.log('First few card IDs:', uniqueCards.slice(0, 5).map(c => c.id));
+
+  res.json(uniqueCards);
 });
 
 // Route pour réinitialiser et repeupler la table des cartes

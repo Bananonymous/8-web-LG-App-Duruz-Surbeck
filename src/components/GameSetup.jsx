@@ -11,7 +11,7 @@ const GameSetup = ({ onComplete }) => {
 
   // Form state
   const [selectedVariant, setSelectedVariant] = useState('base');
-  const [playerCount, setPlayerCount] = useState(14);
+  const [playerCount, setPlayerCount] = useState(5);
   const [selectedCards, setSelectedCards] = useState([]);
   const [showWarning, setShowWarning] = useState(false);
   const [showBaseCards, setShowBaseCards] = useState(true);

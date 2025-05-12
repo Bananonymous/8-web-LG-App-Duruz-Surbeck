@@ -978,6 +978,35 @@
   gap: 0.5rem;
 }
 
+.mj-player-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mj-player-btn {
+  padding: 0.8rem;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background-color: var(--card-background);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.mj-player-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.mj-player-btn.selected {
+  border: 2px solid var(--primary-color);
+  background-color: rgba(var(--accent-color-rgb), 0.1);
+  transform: scale(1.05);
+}
+
 .mj-player-name {
   font-weight: 500;
   margin-bottom: 0.3rem;

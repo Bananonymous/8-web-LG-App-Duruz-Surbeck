@@ -617,7 +617,7 @@
 /* Wake-up order configuration */
 .admin-wake-up-order {
   margin-top: 2rem;
-  max-width: 600px;
+  max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -634,6 +634,236 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
   margin-bottom: 20px;
+}
+
+/* Drag and drop styles */
+.admin-wake-up-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  width: 100%;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  min-height: 50px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-wake-up-list.dragging-over {
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  box-shadow: inset 0 0 10px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.admin-wake-up-card-draggable {
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  background-color: var(--card-background);
+  border: 1px solid #444;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  cursor: grab;
+  height: 100%;
+  min-height: 150px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.admin-wake-up-card-draggable:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.admin-wake-up-card-draggable.dragging {
+  background-color: rgba(var(--primary-color-rgb), 0.15);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(var(--primary-color-rgb), 0.5);
+  transform: scale(1.02);
+  z-index: 100;
+  opacity: 0.8;
+  cursor: grabbing;
+}
+
+.admin-wake-up-card-draggable.drag-over {
+  border: 2px dashed rgba(var(--primary-color-rgb), 0.7);
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  transform: translateY(-2px);
+}
+
+.admin-wake-up-card-draggable.variant {
+  border: 2px solid var(--primary-color);
+}
+
+.admin-wake-up-order-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  margin: 0 auto 10px auto;
+  flex-shrink: 0;
+}
+
+.admin-mode-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.5rem 0;
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.admin-toggle-label {
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: var(--text-color);
+}
+
+.admin-toggle-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.admin-btn-toggle {
+  padding: 0.8rem 1.5rem;
+  border: 2px solid var(--primary-color);
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+  justify-content: center;
+}
+
+.admin-btn-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.admin-btn-toggle.active {
+  background-color: var(--primary-color);
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.admin-toggle-icon {
+  font-size: 1.2rem;
+}
+
+.admin-toggle-check {
+  margin-left: 5px;
+  font-weight: bold;
+}
+
+.admin-drag-handle {
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: grab;
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 5px 10px;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  width: 80%;
+}
+
+.admin-drag-handle:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.4);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-drag-handle:active {
+  cursor: grabbing;
+  background-color: rgba(var(--primary-color-rgb), 0.6);
+}
+
+.dragging .admin-drag-handle {
+  background-color: rgba(var(--primary-color-rgb), 0.6);
+  color: white;
+  border-color: white;
+}
+
+.admin-drag-icon {
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+.admin-drag-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Manual drag list styles */
+.admin-drag-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+  width: 100%;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.admin-drag-buttons {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.admin-drag-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.admin-drag-button:hover:not(:disabled) {
+  background-color: rgba(var(--primary-color-rgb), 0.4);
+  transform: translateY(-2px);
+}
+
+.admin-drag-button:active:not(:disabled) {
+  background-color: rgba(var(--primary-color-rgb), 0.6);
+  transform: translateY(0);
+}
+
+.admin-drag-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .admin-wake-up-card {
@@ -698,8 +928,9 @@
   font-size: 18px;
   font-weight: 500;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   width: 100%;
+  flex-grow: 1;
 }
 
 .admin-wake-up-variant-badge {
@@ -712,6 +943,7 @@
   position: absolute;
   top: 10px;
   right: 10px;
+  z-index: 5;
 }
 
 .admin-wake-up-empty {
