@@ -15,6 +15,8 @@ const GameSetup = ({ onComplete }) => {
   const [selectedCards, setSelectedCards] = useState([]);
   const [showWarning, setShowWarning] = useState(false);
   const [showBaseCards, setShowBaseCards] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [teamFilter, setTeamFilter] = useState('all');
 
   // Fetch variants and cards
   useEffect(() => {
@@ -90,6 +92,11 @@ const GameSetup = ({ onComplete }) => {
   // Handle card removal
   const handleCardRemoval = (instanceId) => {
     setSelectedCards(selectedCards.filter(card => card.instanceId !== instanceId));
+  };
+
+  // Handle removing all cards
+  const handleRemoveAllCards = () => {
+    setSelectedCards([]);
   };
 
   // Count how many of this card are selected
@@ -169,6 +176,28 @@ const GameSetup = ({ onComplete }) => {
     }
   }
 
+  // Define team order for sorting
+  const teamOrder = {
+    'Village': 1,
+    'Loups-Garous': 2,
+    'Solitaire': 3,
+    'Seul': 3  // Same priority as Solitaire
+  };
+
+  // Sort cards by team
+  availableCards.sort((a, b) => {
+    // First sort by team order
+    const teamOrderA = teamOrder[a.team] || 999; // Default high value for unknown teams
+    const teamOrderB = teamOrder[b.team] || 999;
+
+    if (teamOrderA !== teamOrderB) {
+      return teamOrderA - teamOrderB;
+    }
+
+    // If same team, sort alphabetically by name
+    return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+  });
+
   return (
     <div className="mj-card">
       <h2>Configuration de la partie</h2>
@@ -224,13 +253,44 @@ const GameSetup = ({ onComplete }) => {
         </div>
 
         <div className="mj-selected-cards">
-          <h3>Cartes sélectionnées ({selectedCards.length})</h3>
+          <div className="mj-selected-cards-header">
+            <h3>Cartes sélectionnées ({selectedCards.length})</h3>
+            {selectedCards.length > 0 && (
+              <button
+                type="button"
+                className="mj-btn mj-btn-danger"
+                onClick={handleRemoveAllCards}
+              >
+                Supprimer toutes les cartes
+              </button>
+            )}
+          </div>
           <div className="mj-selected-cards-list">
-            {selectedCards.map(card => (
+            {[...selectedCards].sort((a, b) => {
+              // Use the same team order as for available cards
+              const teamOrderA = teamOrder[a.team] || 999;
+              const teamOrderB = teamOrder[b.team] || 999;
+
+              if (teamOrderA !== teamOrderB) {
+                return teamOrderA - teamOrderB;
+              }
+
+              // If same team, sort alphabetically by name
+              return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+            }).map(card => (
               <div key={card.instanceId} className="mj-selected-card">
+                <img
+                  src={card.image_url || '/images/defaut.png'}
+                  alt={card.name}
+                  className="mj-selected-card-image"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/images/defaut.png';
+                  }}
+                />
                 <span className="mj-selected-card-name">{card.name}</span>
-                <span className={`mj-card-team-small ${card.team.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
-                  {card.team}
+                <span className={`mj-card-team-small ${(card.team === 'Seul' ? 'solitaire' : card.team.toLowerCase()).replace(/[^a-z0-9]/g, '-')}`}>
+                  {card.team === 'Seul' ? 'Solitaire' : card.team}
                 </span>
                 {card.type === 'variant' && (
                   <span className="mj-card-variant-badge-small">Variante</span>
@@ -249,30 +309,130 @@ const GameSetup = ({ onComplete }) => {
 
         <div className="mj-form-group">
           <label>Cartes disponibles</label>
+
+          <div className="mj-card-filters">
+            <div className="mj-search-container">
+              <input
+                type="text"
+                placeholder="Rechercher une carte..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="mj-search-input"
+              />
+              {searchTerm && (
+                <button
+                  className="mj-search-clear"
+                  onClick={() => setSearchTerm('')}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            <select
+              value={teamFilter}
+              onChange={(e) => setTeamFilter(e.target.value)}
+              className="mj-team-filter"
+            >
+              <option value="all">Toutes les équipes</option>
+              <option value="Village">Village</option>
+              <option value="Loups-Garous">Loups-Garous</option>
+              <option value="Solitaire">Solitaire</option>
+            </select>
+          </div>
+
           <div className="mj-card-selection">
-            {availableCards.map(card => (
-              <div
-                key={`${card.type}-${card.id}`}
-                className="mj-card-item"
-                onClick={() => handleCardSelection(card)}
-              >
-                <div className="mj-card-item-header">
-                  <h3>{card.name}</h3>
-                  <span className={`mj-card-team ${card.team.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
-                    {card.team}
-                  </span>
-                </div>
-                <p className="mj-card-description">{card.description}</p>
-                {card.type === 'variant' && (
-                  <span className="mj-card-variant-badge">Variante</span>
-                )}
-                {getCardCount(card) > 0 && (
-                  <div className="mj-card-count">
-                    {getCardCount(card)}
+            {(() => {
+              // Group cards by team
+              let currentTeam = null;
+              const result = [];
+
+              // Filter cards based on search term and team filter
+              const filteredCards = availableCards.filter(card => {
+                // Apply search filter
+                const matchesSearch = searchTerm === '' ||
+                  card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  card.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+                // Apply team filter
+                const matchesTeam = teamFilter === 'all' ||
+                  (teamFilter === 'Solitaire' && card.team === 'Seul') ||
+                  card.team === teamFilter;
+
+                return matchesSearch && matchesTeam;
+              });
+
+              // If no cards match the filters, show a message
+              if (filteredCards.length === 0) {
+                result.push(
+                  <div key="no-results" className="mj-no-results">
+                    Aucune carte ne correspond à votre recherche.
                   </div>
-                )}
-              </div>
-            ))}
+                );
+                return result;
+              }
+
+              filteredCards.forEach(card => {
+                const team = card.team;
+
+                // If we're starting a new team section, add a team header
+                if (team !== currentTeam) {
+                  currentTeam = team;
+                  const displayTeam = team === 'Seul' ? 'Solitaire' : team;
+
+                  // Add a separator if this isn't the first team
+                  if (result.length > 0) {
+                    result.push(
+                      <div key={`separator-${team}`} className="mj-team-separator"></div>
+                    );
+                  }
+
+                  // Add the team header
+                  result.push(
+                    <div key={`header-${team}`} className="mj-team-header">
+                      <h3 className={`mj-team-title ${(team === 'Seul' ? 'solitaire' : team.toLowerCase()).replace(/[^a-z0-9]/g, '-')}`}>
+                        {displayTeam}
+                      </h3>
+                    </div>
+                  );
+                }
+
+                // Add the card
+                result.push(
+                  <div
+                    key={`${card.type}-${card.id}`}
+                    className="mj-card-item"
+                    onClick={() => handleCardSelection(card)}
+                  >
+                    <img
+                      src={card.image_url || '/images/defaut.png'}
+                      alt={card.name}
+                      className="mj-card-image"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/images/defaut.png';
+                      }}
+                    />
+                    <div className="mj-card-item-header">
+                      <h3>{card.name}</h3>
+                      <span className={`mj-card-team ${(card.team === 'Seul' ? 'solitaire' : card.team.toLowerCase()).replace(/[^a-z0-9]/g, '-')}`}>
+                        {card.team === 'Seul' ? 'Solitaire' : card.team}
+                      </span>
+                    </div>
+                    {card.type === 'variant' && (
+                      <span className="mj-card-variant-badge">Variante</span>
+                    )}
+                    {getCardCount(card) > 0 && (
+                      <div className="mj-card-count">
+                        {getCardCount(card)}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+
+              return result;
+            })()}
           </div>
         </div>
 
@@ -281,8 +441,8 @@ const GameSetup = ({ onComplete }) => {
             Continuer
           </button>
         </div>
-      </form>
-    </div>
+      </form >
+    </div >
   );
 };
 

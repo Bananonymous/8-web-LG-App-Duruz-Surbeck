@@ -243,7 +243,7 @@ function initializeDatabase() {
       },
       {
         name: 'Joueur de flûte',
-        team: 'Seul',
+        team: 'Solitaire',
         description: 'chaque nuit, enchante une personne, il gagne lorsque tout le village est enchanté',
         lore: 'Son objectif est de charmer tous les joueurs encore en vie pour gagner la partie.',
         image_url: '/images/joueur-de-flute.png',
@@ -254,7 +254,7 @@ function initializeDatabase() {
       },
       {
         name: 'Loup-garou blanc',
-        team: 'Seul',
+        team: 'Solitaire',
         description: 'une nuit sur deux, tue un joueur',
         lore: 'Solitaire et traître, il joue un double jeu pour être le dernier survivant.',
         image_url: '/images/loup-garou-blanc.png',
@@ -375,7 +375,7 @@ function initializeDatabase() {
       },
       {
         name: 'Ange déchu',
-        team: 'Seul',
+        team: 'Solitaire',
         description: 'gagne s\'il meurt la première nuit ou le premier jour, la partie s\'arrête',
         lore: 'Être céleste dont la mission est de protéger le village, mais qui peut aussi chercher le martyre.',
         image_url: '/images/ange-dechu.png',
@@ -386,7 +386,7 @@ function initializeDatabase() {
       },
       {
         name: 'Abominable sectaire',
-        team: 'Seul',
+        team: 'Solitaire',
         description: 'divise le groupe en deux selon un critère, gagne lorsque les joueurs de l\'autre groupe que le sien sont morts',
         lore: 'Fanatique et déterminé, il traque les Loups-Garous avec une ferveur religieuse.',
         image_url: '/images/abominable-sectaire.png',
@@ -397,7 +397,7 @@ function initializeDatabase() {
       },
       {
         name: 'Infect père des loups',
-        team: 'Seul',
+        team: 'Loups-Garous',
         description: 'une fois dans la partie, peut convertir la victime des loups en loup',
         lore: 'Son pouvoir ancestral lui permet de transformer un humain en loup-garou.',
         image_url: '/images/infect-pere-loups.png',
@@ -419,7 +419,7 @@ function initializeDatabase() {
       },
       {
         name: 'Grand méchant loup',
-        team: 'Loups',
+        team: 'Loups-Garous',
         description: 'tant que personne du clan des loups n\'est mort, se réveille seul après les loups pour faire une deuxième victime',
         lore: 'Le plus redoutable des loups-garous, il peut faire une victime supplémentaire tant que sa meute est intacte.',
         image_url: '/images/grand-mechant-loup.png',
@@ -873,7 +873,7 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
       },
       {
         name: 'Joueur de flûte',
-        team: 'Seul',
+        team: 'Solitaire',
         description: 'chaque nuit, enchante une personne, il gagne lorsque tout le village est enchanté',
         lore: 'Son objectif est de charmer tous les joueurs encore en vie pour gagner la partie.',
         image_url: '/images/joueur-de-flute.png',
@@ -884,7 +884,7 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
       },
       {
         name: 'Loup-garou blanc',
-        team: 'Seul',
+        team: 'Solitaire',
         description: 'une nuit sur deux, tue un joueur',
         lore: 'Solitaire et traître, il joue un double jeu pour être le dernier survivant.',
         image_url: '/images/loup-garou-blanc.png',
@@ -1005,7 +1005,7 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
       },
       {
         name: 'Ange déchu',
-        team: 'Seul',
+        team: 'Solitaire',
         description: 'gagne s\'il meurt la première nuit ou le premier jour, la partie s\'arrête',
         lore: 'Être céleste dont la mission est de protéger le village, mais qui peut aussi chercher le martyre.',
         image_url: '/images/ange-dechu.png',
@@ -1016,7 +1016,7 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
       },
       {
         name: 'Abominable sectaire',
-        team: 'Seul',
+        team: 'Solitaire',
         description: 'divise le groupe en deux selon un critère, gagne lorsque les joueurs de l\'autre groupe que le sien sont morts',
         lore: 'Fanatique et déterminé, il traque les Loups-Garous avec une ferveur religieuse.',
         image_url: '/images/abominable-sectaire.png',
@@ -1027,7 +1027,7 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
       },
       {
         name: 'Infect père des loups',
-        team: 'Seul',
+        team: 'Loups-Garous',
         description: 'une fois dans la partie, peut convertir la victime des loups en loup',
         lore: 'Son pouvoir ancestral lui permet de transformer un humain en loup-garou.',
         image_url: '/images/infect-pere-loups.png',
@@ -1049,7 +1049,7 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
       },
       {
         name: 'Grand méchant loup',
-        team: 'Loups',
+        team: 'Loups-Garous',
         description: 'tant que personne du clan des loups n\'est mort, se réveille seul après les loups pour faire une deuxième victime',
         lore: 'Le plus redoutable des loups-garous, il peut faire une victime supplémentaire tant que sa meute est intacte.',
         image_url: '/images/grand-mechant-loup.png',

@@ -51,7 +51,7 @@ const CardDetail = () => {
         <div className="card-detail-info">
           <h1>{card.name}</h1>
           <div className="card-detail-badges">
-            <span className="card-detail-team">{card.team}</span>
+            <span className="card-detail-team">{card.team === 'Seul' ? 'Solitaire' : card.team}</span>
             {card.is_custom === 1
               ? <span className="card-detail-custom">Carte personnalisée</span>
               : <span className="card-detail-official">Jeu de base</span>

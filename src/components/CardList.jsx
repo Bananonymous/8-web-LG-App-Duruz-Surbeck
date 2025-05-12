@@ -108,7 +108,7 @@ const CardList = () => {
               >
                 <option value="all">Toutes les équipes</option>
                 {teams.filter(team => team !== 'all').map(team => (
-                  <option key={team} value={team}>{team}</option>
+                  <option key={team} value={team}>{team === 'Seul' ? 'Solitaire' : team}</option>
                 ))}
               </select>
             </div>

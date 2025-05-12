@@ -1,9 +1,13 @@
 #!/bin/bash
 
-# Installer les dépendances du serveur
+# Installer toutes les dépendances (client et serveur)
+echo "Installation des dépendances..."
+npm install --legacy-peer-deps
+
+# Installer les dépendances du serveur spécifiquement
 echo "Installation des dépendances du serveur..."
 npm install --prefix . -g nodemon
-npm install --prefix . express cors jsonwebtoken bcrypt better-sqlite3
+npm install --prefix . express cors jsonwebtoken bcrypt bcryptjs better-sqlite3
 
 # Démarrer le serveur en arrière-plan
 echo "Démarrage du serveur..."

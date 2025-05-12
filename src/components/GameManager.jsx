@@ -14,7 +14,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
   const [showTimer, setShowTimer] = useState(false);
   const [timerDuration, setTimerDuration] = useState(300); // 5 minutes default
   const [nightVictim, setNightVictim] = useState(null);
-  const [callDeadRoles, setCallDeadRoles] = useState(true);
+  const [callDeadRoles, setCallDeadRoles] = useState(false);
 
   // Special role states
   const [witchSaveUsed, setWitchSaveUsed] = useState(false);
@@ -427,6 +427,9 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
       }
     }
 
+    // Save the current game state before moving to the next role
+    saveGameState();
+
     const currentIndex = roleQueue.findIndex(role => role === currentRole);
     console.log('Current index in role queue:', currentIndex);
     console.log('Role queue length:', roleQueue.length);
@@ -488,7 +491,11 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
     // Only add werewolf victim if not saved by witch
     if (nightVictim && !savedByWitch) {
       console.log(`Adding werewolf victim ${nightVictim} to victims list`);
-      newVictims.push(nightVictim);
+
+      // Only add if not already in the list
+      if (!newVictims.includes(nightVictim)) {
+        newVictims.push(nightVictim);
+      }
 
       // Check if the victim is a lover
       if (cupidonLovers.includes(nightVictim)) {
@@ -512,7 +519,11 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
     // Process witch kill if used
     if (witchKillTarget) {
       console.log(`Adding witch kill target ${witchKillTarget} to victims list`);
-      newVictims.push(witchKillTarget);
+
+      // Only add if not already in the list
+      if (!newVictims.includes(witchKillTarget)) {
+        newVictims.push(witchKillTarget);
+      }
 
       // Check if the witch's target is a lover
       if (cupidonLovers.includes(witchKillTarget)) {
@@ -533,11 +544,16 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
       }
     }
 
-    // Check if hunter was killed
-    const hunterKilled = nightVictim &&
+    // Check if hunter was killed by werewolves or witch
+    const hunterKilledByWerewolves = nightVictim &&
       gameConfig.players.find(p => p.id === nightVictim)?.card.name === 'Chasseur' &&
       !savedByWitch;
-    console.log('Hunter killed:', hunterKilled);
+
+    const hunterKilledByWitch = witchKillTarget &&
+      gameConfig.players.find(p => p.id === witchKillTarget)?.card.name === 'Chasseur';
+
+    const hunterKilled = hunterKilledByWerewolves || hunterKilledByWitch;
+    console.log('Hunter killed:', hunterKilled, 'By werewolves:', hunterKilledByWerewolves, 'By witch:', hunterKilledByWitch);
 
     if (hunterKilled) {
       setHunterCanShoot(true);
@@ -546,6 +562,11 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
     // Update victims list and move to morning phase
     console.log('New victims list:', newVictims);
     setVictims(newVictims);
+
+    // Reset night victim and witch kill target for the next night
+    // This fixes the bug where the witch's target persists across nights
+    setNightVictim(null);
+    setWitchKillTarget(null);
 
     // Save game state before changing phase
     saveGameState();
@@ -733,6 +754,11 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
     );
   };
 
+  // Check if a player is in love
+  const isPlayerInLove = (playerId) => {
+    return cupidonLovers.includes(playerId);
+  };
+
   // Check if game is over
   const isGameOver = () => {
     const alivePlayers = getAlivePlayers();
@@ -826,9 +852,6 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                 <span className="mj-wake-up-number">{index + 1}</span>
                 <span className="mj-wake-up-role-name">{role.card.name}</span>
                 <span className="mj-wake-up-player-name">({role.playerName})</span>
-                {role.orderNumber && role.orderNumber !== 999 && (
-                  <span className="mj-wake-up-admin-order">(Ordre configuré: {role.orderNumber})</span>
-                )}
               </div>
             ))}
           </div>
@@ -883,10 +906,24 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                           padding: '10px',
                           margin: '5px',
                           borderRadius: '4px',
-                          fontWeight: isSelected ? 'bold' : 'normal'
+                          fontWeight: isSelected ? 'bold' : 'normal',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center'
                         }}
                       >
-                        {player.name}
+                        <div>
+                          {player.name}
+                          {isPlayerInLove(player.id) && <span style={{ marginLeft: '5px', color: '#e91e63' }}>❤️</span>}
+                        </div>
+                        <div style={{
+                          fontSize: '0.8em',
+                          opacity: 0.8,
+                          marginTop: '3px',
+                          color: isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.7)'
+                        }}>
+                          {player.card.name}
+                        </div>
                       </button>
                     );
                   });
@@ -1039,6 +1076,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                                     }}
                                   >
                                     {player.name}
+                                    {isPlayerInLove(player.id) && <span style={{ marginLeft: '5px', color: '#e91e63' }}>❤️</span>}
                                   </button>
                                 );
                               });
@@ -1056,19 +1094,24 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                       )}
                     </div>
                   ) : (
-                    <p>Potion déjà utilisée.</p>
+                    <div>
+                      <p>Potion déjà utilisée.</p>
+                      <button
+                        className="mj-btn mj-btn-secondary"
+                        onClick={() => {
+                          setWitchKillTarget(null);
+                          setWitchKillUsed(false);
+                        }}
+                        style={{ marginTop: '10px' }}
+                      >
+                        Annuler l'utilisation
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="mj-witch-continue">
-                <button
-                  className="mj-btn"
-                  onClick={handleWitchPotionsComplete}
-                >
-                  Continuer
-                </button>
-              </div>
+
             </div>
           )}
 
@@ -1078,34 +1121,34 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
               {voyanteRevealedCard ? (
                 <div className="mj-voyante-reveal">
                   <div className="mj-revealed-card-fullscreen" onClick={() => setVoyanteRevealedCard(null)}>
-                    {voyanteRevealedCard.card.image ? (
-                      <div className="mj-revealed-card-image-large">
-                        <img
-                          src={voyanteRevealedCard.card.image}
-                          alt={voyanteRevealedCard.card.name}
-                          style={{
-                            maxWidth: '90vw',
-                            maxHeight: '80vh',
-                            borderRadius: '8px',
-                            boxShadow: '0 0 30px rgba(255, 255, 255, 0.3)'
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="mj-revealed-card-name-large">
-                        {voyanteRevealedCard.card.name}
-                      </div>
-                    )}
+                    <div className="mj-revealed-card-image-large">
+                      <img
+                        src={voyanteRevealedCard.card.image_url || '/images/defaut.png'}
+                        alt={voyanteRevealedCard.card.name}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/images/defaut.png';
+                        }}
+                        style={{
+                          maxWidth: '90vw',
+                          maxHeight: '80vh',
+                          borderRadius: '8px',
+                          boxShadow: '0 0 30px rgba(255, 255, 255, 0.3)'
+                        }}
+                      />
+                    </div>
+                    <div className="mj-revealed-card-name-large">
+                      {voyanteRevealedCard.card.name}
+                    </div>
                     <div className="mj-revealed-card-tap">Tapez pour fermer</div>
                   </div>
                   <button
                     className="mj-btn"
                     onClick={() => {
                       setVoyanteRevealedCard(null);
-                      handleNextRole();
                     }}
                   >
-                    Continuer
+                    Fermer
                   </button>
                 </div>
               ) : (
@@ -1121,7 +1164,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                           className="mj-player-item mj-voyante-player"
                           onClick={() => {
                             console.log('Voyante revealing card:', player.card);
-                            console.log('Card image URL:', player.card.image);
+                            console.log('Card image URL:', player.card.image_url);
                             setVoyanteRevealedCard({
                               playerId: player.id,
                               playerName: player.name,
@@ -1130,6 +1173,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                           }}
                         >
                           {player.name}
+                          {isPlayerInLove(player.id) && <span style={{ marginLeft: '5px', color: '#e91e63' }}>❤️</span>}
                         </div>
                       ))
                     }
@@ -1279,9 +1323,13 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
     // Get all victims that aren't from executions
     const allNightVictims = victims.filter(v => !executed.includes(v));
 
-    // Get only the victims from the current night
-    const lastNightVictimCount = (nightVictim && !witchSaveUsed ? 1 : 0) + (witchKillTarget ? 1 : 0);
-    const lastNightVictims = allNightVictims.slice(-lastNightVictimCount);
+    // For debugging
+    console.log('Morning phase - nightVictim:', nightVictim);
+    console.log('Morning phase - witchSaveUsed:', witchSaveUsed);
+    console.log('Morning phase - witchKillTarget:', witchKillTarget);
+
+    // Get only the victims from the current night - we'll handle this differently
+    // Instead of using slice, we'll explicitly check for the current night's victims
 
     // Separate werewolf and witch victims for display
     const werewolfVictim = nightVictim && !witchSaveUsed ?
@@ -1307,6 +1355,12 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                   key={player.id}
                   className={`mj-player-item ${hunterVictim === player.id ? 'selected' : ''}`}
                   onClick={() => setHunterVictim(player.id)}
+                  style={{
+                    backgroundColor: hunterVictim === player.id ? 'var(--btn-primary-bg)' : 'var(--card-background)',
+                    color: hunterVictim === player.id ? 'var(--btn-primary-text)' : 'var(--text-color)',
+                    border: hunterVictim === player.id ? '2px solid var(--primary-color)' : '1px solid var(--input-border)',
+                    fontWeight: hunterVictim === player.id ? 'bold' : 'normal'
+                  }}
                 >
                   {player.name}
                 </div>
@@ -1322,6 +1376,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                   }
                   setHunterCanShoot(false);
                   setHunterVictim(null);
+                  handleMorningComplete();
                 }}
               >
                 Confirmer
@@ -1331,6 +1386,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                 onClick={() => {
                   setHunterCanShoot(false);
                   setHunterVictim(null);
+                  handleMorningComplete();
                 }}
               >
                 Ne pas tirer
@@ -1341,11 +1397,11 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
           <div className="mj-info-card">
             <h3>Récapitulatif de la nuit</h3>
 
-            {lastNightVictims.length === 0 ? (
+            {!nightVictim && !witchKillTarget && !witchSaveUsed ? (
               <p>Aucune victime cette nuit.</p>
             ) : (
               <div className="mj-victims-recap">
-                {werewolfVictim && (
+                {nightVictim && !witchSaveUsed && werewolfVictim && (
                   <div className="mj-victim-info mj-werewolf-victim">
                     <p>Les Loups-Garous ont dévoré :</p>
                     <div className="mj-victim-item">
@@ -1355,7 +1411,7 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                   </div>
                 )}
 
-                {witchVictim && (
+                {witchKillTarget && witchVictim && (
                   <div className="mj-victim-info mj-witch-victim">
                     <p>La Sorcière a empoisonné :</p>
                     <div className="mj-victim-item">
@@ -1367,8 +1423,12 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
 
                 {witchSaveUsed && nightVictim && (
                   <div className="mj-victim-saved">
-                    <p>La Sorcière a utilisé sa potion de guérison pour sauver quelqu'un.</p>
+                    <p>La Sorcière a utilisé sa potion de guérison pour sauver {gameConfig.players.find(p => p.id === nightVictim)?.name}.</p>
                   </div>
+                )}
+
+                {!nightVictim && !witchKillTarget && witchSaveUsed && (
+                  <p>Aucune victime cette nuit. La Sorcière a utilisé sa potion de guérison.</p>
                 )}
               </div>
             )}
@@ -1434,12 +1494,6 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
                   </button>
                 </div>
                 <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    className="mj-btn mj-btn-secondary"
-                    onClick={handleDiscussionComplete}
-                  >
-                    Annuler le timer
-                  </button>
                   <button
                     className="mj-btn"
                     onClick={() => setGamePhase('execution')}
@@ -1539,6 +1593,12 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
               key={player.id}
               className={`mj-player-item ${hunterVictim === player.id ? 'selected' : ''}`}
               onClick={() => setHunterVictim(player.id)}
+              style={{
+                backgroundColor: hunterVictim === player.id ? 'var(--btn-primary-bg)' : 'var(--card-background)',
+                color: hunterVictim === player.id ? 'var(--btn-primary-text)' : 'var(--text-color)',
+                border: hunterVictim === player.id ? '2px solid var(--primary-color)' : '1px solid var(--input-border)',
+                fontWeight: hunterVictim === player.id ? 'bold' : 'normal'
+              }}
             >
               <div className="mj-player-name">{player.name}</div>
               <div className="mj-player-role">{player.card.name}</div>
@@ -1644,32 +1704,82 @@ const GameManager = ({ gameConfig, onRestart, onGameConfigUpdate }) => {
     </div>
   );
 
+  // Handle player kill/revive
+  const handleTogglePlayerStatus = (playerId) => {
+    if (victims.includes(playerId) || executed.includes(playerId)) {
+      // Player is dead, revive them
+      setVictims(victims.filter(id => id !== playerId));
+      setExecuted(executed.filter(id => id !== playerId));
+    } else {
+      // Player is alive, kill them
+      setVictims([...victims, playerId]);
+    }
+
+    // Save game state after changing player status
+    saveGameState();
+  };
+
   // Render remaining players modal
-  const renderRemainingPlayersModal = () => (
-    <div className="mj-modal" onClick={() => setShowRemainingPlayers(false)}>
-      <div className="mj-modal-content" onClick={e => e.stopPropagation()}>
-        <div className="mj-modal-header">
-          <h3>Joueurs restants</h3>
-          <button className="mj-modal-close" onClick={() => setShowRemainingPlayers(false)}>×</button>
-        </div>
-        <div className="mj-modal-body">
-          <div className="mj-remaining-players">
-            {getAlivePlayers().map(player => (
-              <div key={player.id} className="mj-remaining-player">
-                <div className="mj-remaining-player-name">{player.name}</div>
-                <div className="mj-remaining-player-card">
-                  <span className="mj-remaining-player-role">{player.card.name}</span>
-                  <span className={`mj-card-team-small ${player.card.team.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
-                    {player.card.team}
-                  </span>
-                </div>
-              </div>
-            ))}
+  const renderRemainingPlayersModal = () => {
+    // Get all players, sorted with alive first, then dead
+    const alivePlayers = getAlivePlayers();
+    const deadPlayers = gameConfig.players.filter(player =>
+      victims.includes(player.id) || executed.includes(player.id)
+    );
+
+    const allPlayersSorted = [...alivePlayers, ...deadPlayers];
+
+    return (
+      <div className="mj-modal" onClick={() => setShowRemainingPlayers(false)}>
+        <div className="mj-modal-content" onClick={e => e.stopPropagation()}>
+          <div className="mj-modal-header">
+            <h3>Joueurs</h3>
+            <button className="mj-modal-close" onClick={() => setShowRemainingPlayers(false)}>×</button>
+          </div>
+          <div className="mj-modal-body">
+            <div className="mj-remaining-players">
+              {allPlayersSorted.map(player => {
+                const isDead = victims.includes(player.id) || executed.includes(player.id);
+
+                return (
+                  <div
+                    key={player.id}
+                    className={`mj-remaining-player ${isDead ? 'mj-dead-player' : ''}`}
+                    onClick={() => handleTogglePlayerStatus(player.id)}
+                    style={{
+                      cursor: 'pointer',
+                      opacity: isDead ? 0.7 : 1,
+                      backgroundColor: isDead ? 'rgba(0,0,0,0.05)' : 'var(--card-background)',
+                      color: 'var(--text-color)',
+                      padding: '10px',
+                      borderRadius: '5px',
+                      margin: '5px 0',
+                      border: '1px solid var(--input-border)'
+                    }}
+                  >
+                    <div className="mj-remaining-player-name">
+                      {player.name}
+                      {isPlayerInLove(player.id) && <span style={{ marginLeft: '5px', color: '#e91e63' }}>❤️</span>}
+                      {isDead && <span style={{ marginLeft: '5px', color: 'red' }}>☠️</span>}
+                    </div>
+                    <div className="mj-remaining-player-card">
+                      <span className="mj-remaining-player-role">{player.card.name}</span>
+                      <span className={`mj-card-team-small ${(player.card.team === 'Seul' ? 'solitaire' : player.card.team.toLowerCase()).replace(/[^a-z0-9]/g, '-')}`}>
+                        {player.card.team === 'Seul' ? 'Solitaire' : player.card.team}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8em', marginTop: '5px', color: 'var(--secondary-color)' }}>
+                      {isDead ? 'Cliquez pour ressusciter' : 'Cliquez pour tuer'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Save game state to localStorage
   const saveGameState = () => {

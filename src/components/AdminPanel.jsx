@@ -118,15 +118,7 @@ const CardManager = () => {
       <div className="admin-header">
         <h2>Gestion des Cartes</h2>
         <div className="admin-header-actions">
-          <button onClick={handleRefresh} className="btn btn-refresh" disabled={loading}>
-            {loading ? 'Chargement...' : 'Actualiser'}
-          </button>
-          <button onClick={handleHardRefresh} className="btn btn-hard-refresh" disabled={loading}>
-            Actualiser (Hard)
-          </button>
-          <button onClick={handleFixIds} className="btn btn-fix-ids" disabled={loading}>
-            Réparer les IDs
-          </button>
+
           <Link to="/admin/cards/new" className="btn btn-add">
             Ajouter une Carte
           </Link>
@@ -134,10 +126,7 @@ const CardManager = () => {
       </div>
 
       <div className="admin-table">
-        <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#333', color: 'white', borderRadius: '5px' }}>
-          <strong>Debug Info:</strong> Total cards: {cards.length},
-          First few IDs: {cards.slice(0, 5).map(c => c.id).join(', ')}
-        </div>
+
         <table>
           <thead>
             <tr>

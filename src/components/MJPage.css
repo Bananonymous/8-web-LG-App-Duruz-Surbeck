@@ -240,11 +240,104 @@
 }
 
 /* Card selection */
+.mj-card-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mj-search-container {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.mj-search-input {
+  width: 100%;
+  padding: 0.5rem 2rem 0.5rem 0.5rem;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+}
+
+.mj-search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mj-team-filter {
+  padding: 0.5rem;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  min-width: 150px;
+}
+
 .mj-card-selection {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.mj-team-header {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.mj-team-title {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 1.2rem;
+  color: white;
+  margin: 0;
+}
+
+.mj-team-title.village {
+  background-color: #28a745;
+}
+
+.mj-team-title.loups-garous {
+  background-color: #dc3545;
+}
+
+.mj-team-title.solitaire {
+  background-color: #9c27b0;
+}
+
+.mj-team-separator {
+  grid-column: 1 / -1;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 1rem 0;
+}
+
+.mj-no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin: 1rem 0;
 }
 
 .mj-card-item {
@@ -255,6 +348,9 @@
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .mj-card-item:hover {
@@ -269,14 +365,16 @@
 
 .mj-card-item-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
   margin-bottom: 0.5rem;
 }
 
 .mj-card-item-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
+  margin: 0 0 0.3rem 0;
+  font-size: 1.1rem;
+  text-align: center;
 }
 
 .mj-card-team {
@@ -302,10 +400,14 @@
   color: white;
 }
 
-.mj-card-description {
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-  color: var(--text-color);
+.mj-card-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  object-fit: contain;
+  margin-bottom: 0.8rem;
+  border: 2px solid var(--input-border);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .mj-card-variant-badge {
@@ -362,15 +464,36 @@
   padding: 1rem;
 }
 
-.mj-selected-cards h3 {
-  margin-top: 0;
+.mj-selected-cards-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
+}
+
+.mj-selected-cards h3 {
+  margin: 0;
   font-size: 1.2rem;
 }
 
+.mj-btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.mj-btn-danger:hover {
+  background-color: #c82333;
+}
+
 .mj-selected-cards-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 0.5rem;
 }
 
@@ -380,6 +503,17 @@
   background-color: rgba(255, 255, 255, 0.1);
   padding: 0.5rem;
   border-radius: 4px;
+  position: relative;
+}
+
+.mj-selected-card-image {
+  width: 35px;
+  height: 35px;
+  border-radius: 4px;
+  object-fit: contain;
+  margin-right: 0.5rem;
+  border: 1px solid var(--input-border);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .mj-selected-card-name {
@@ -714,32 +848,38 @@
   height: 100%;
   background-color: rgba(0, 0, 0, 0.9);
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   cursor: pointer;
+  padding: 2rem;
 }
 
 .mj-revealed-card-image-large {
   text-align: center;
   max-width: 90%;
-  max-height: 90%;
+  max-height: 60%;
+  margin-bottom: 1rem;
 }
 
 .mj-revealed-card-image-large img {
   max-width: 100%;
-  max-height: 80vh;
+  max-height: 50vh;
   border-radius: 8px;
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 0.5rem;
 }
 
 .mj-revealed-card-name-large {
-  font-size: 5rem;
+  font-size: 3rem;
   font-weight: bold;
   text-align: center;
   color: var(--primary-color);
   text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  padding: 2rem;
+  padding: 1.5rem 0;
+  margin-top: 1rem;
 }
 
 .mj-revealed-card-tap {
