@@ -7,14 +7,20 @@ import { getRoleComponent } from './index';
 const Voyante = lazy(() => import('./village/Voyante'));
 const Sorciere = lazy(() => import('./village/Sorciere'));
 const Salvateur = lazy(() => import('./village/Salvateur'));
+const Ancien = lazy(() => import('./village/Ancien'));
+const Chevalier = lazy(() => import('./village/Chevalier'));
 const Werewolf = lazy(() => import('./werewolf/Werewolf'));
+const InfectPere = lazy(() => import('./werewolf/InfectPere'));
 
 // Map of role names to their components
 const roleComponentMap = {
   'Voyante': Voyante,
   'Sorcière': Sorciere,
   'Salvateur': Salvateur,
+  'Ancien': Ancien,
+  'Chevalier à l\'épée rouillée': Chevalier,
   'Loup-Garou': Werewolf,
+  'Infect père des loups': InfectPere,
   // Add more roles here as they are implemented
 };
 

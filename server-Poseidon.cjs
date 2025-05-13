@@ -1,10 +1,3 @@
-// Import dotenv for environment variable support
-try {
-  require('dotenv').config();
-} catch (err) {
-  console.log('dotenv not installed, using default environment variables');
-}
-
 const express = require('express');
 const cors = require('cors');
 const Database = require('better-sqlite3');
@@ -12,28 +5,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 
-// Import our card utilities
-const cardUtils = require('./lib/cardUtils.cjs');
-// Import our logger
-const { createLogger } = require('./lib/logger.cjs');
-const logger = createLogger('Server');
-
 const app = express();
-const PORT = process.env.PORT || 5000;
-// Use environment variable for JWT secret or fall back to a default (for development only)
-const JWT_SECRET = process.env.JWT_SECRET || 'votre_clé_secrète_jwt';
-
-if (JWT_SECRET === 'votre_clé_secrète_jwt') {
-  logger.warn('Using default JWT_SECRET. Set JWT_SECRET environment variable for production use.');
-}
-
-// Admin credentials from environment variables
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-
-if (ADMIN_USERNAME === 'admin' && ADMIN_PASSWORD === 'admin123') {
-  logger.warn('Using default admin credentials. Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables for production use.');
-}
+const PORT = 5000;
+const JWT_SECRET = 'votre_clé_secrète_jwt';
 
 // Middleware
 app.use(cors());
@@ -123,9 +97,9 @@ function initializeDatabase() {
   // Vérifier si un admin existe déjà, sinon en créer un
   const adminExists = db.prepare('SELECT * FROM users WHERE is_admin = 1 LIMIT 1').get();
   if (!adminExists) {
-    const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
-    db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)').run(ADMIN_USERNAME, hashedPassword, 1);
-    console.log(`Admin utilisateur créé avec le nom d'utilisateur: ${ADMIN_USERNAME} et le mot de passe: ${ADMIN_PASSWORD}`);
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
+    db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)').run('admin', hashedPassword, 1);
+    console.log('Admin utilisateur créé avec le nom d\'utilisateur: admin et le mot de passe: admin123');
   }
 
   // Ajouter quelques cartes par défaut si la table est vide
@@ -610,16 +584,16 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
 app.post('/api/reset-admin', (req, res) => {
   try {
     // Réinitialiser le mot de passe de l'admin
-    const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
-    db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hashedPassword, ADMIN_USERNAME);
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
+    db.prepare('UPDATE users SET password = ? WHERE username = ?').run(hashedPassword, 'admin');
 
     // Créer l'admin s'il n'existe pas
-    const adminExists = db.prepare('SELECT * FROM users WHERE username = ?').get(ADMIN_USERNAME);
+    const adminExists = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
     if (!adminExists) {
-      db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)').run(ADMIN_USERNAME, hashedPassword, 1);
+      db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)').run('admin', hashedPassword, 1);
     }
 
-    res.status(200).json({ message: `Mot de passe admin réinitialisé avec succès. Utilisez ${ADMIN_USERNAME}/${ADMIN_PASSWORD} pour vous connecter.` });
+    res.status(200).json({ message: 'Mot de passe admin réinitialisé avec succès. Utilisez admin/admin123 pour vous connecter.' });
   } catch (error) {
     console.error('Erreur lors de la réinitialisation du mot de passe admin:', error);
     res.status(500).json({ message: 'Erreur lors de la réinitialisation du mot de passe admin', error: error.message });
@@ -628,21 +602,11 @@ app.post('/api/reset-admin', (req, res) => {
 
 // Routes pour les cartes
 app.get('/api/cards', (req, res) => {
-  try {
-    // Get cards directly from database
-    const cards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
-
-    // Convert SQLite integer values to booleans for API response
-    const formattedCards = cards.map(card => cardUtils.prepareCardForApi(card));
-
-    res.json(formattedCards);
-  } catch (error) {
-    console.error('Error fetching cards:', error);
-    res.status(500).json({
-      message: 'Error fetching cards',
-      error: error.message
-    });
-  }
+  // Get cards directly from the database with proper sorting
+  const cards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
+  
+  // Return the actual cards from the database without any ID manipulation
+  res.json(cards);
 });
 
 // Route pour diagnostiquer et réparer les IDs des cartes
@@ -659,13 +623,13 @@ app.post('/api/fix-card-ids', (req, res) => {
     if (minId > 1 || cards.some((card, index) => card.id !== index + 1)) {
       // There's a problem with the IDs, let's fix it
       console.log('Fixing card IDs using optimized approach...');
-
+      
       // Create a backup first
       db.exec('CREATE TABLE IF NOT EXISTS cards_backup AS SELECT * FROM cards');
-
+      
       // Reset the SQLite sequence counter
       db.exec('DELETE FROM sqlite_sequence WHERE name="cards"');
-
+      
       // Use a transaction for better performance
       db.transaction(() => {
         // Recreate table structure with proper autoincrement
@@ -694,7 +658,7 @@ app.post('/api/fix-card-ids', (req, res) => {
           ALTER TABLE cards_new RENAME TO cards;
         `);
       })();
-
+      
       // Get the fixed cards
       const fixedCards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
       console.log(`Found ${fixedCards.length} cards after fixing`);
@@ -728,10 +692,10 @@ app.post('/api/fix-card-ids', (req, res) => {
     }
   } catch (error) {
     console.error('Error fixing card IDs:', error);
-    res.status(500).json({
-      message: 'Error fixing card IDs',
+    res.status(500).json({ 
+      message: 'Error fixing card IDs', 
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
     });
   }
 });
@@ -1073,20 +1037,17 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
     ];
 
     const insertCard = db.prepare('INSERT INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-
-    // Use our utility function to prepare cards for database
     for (const card of defaultCards) {
-      const preparedCard = cardUtils.prepareCardForDb(card);
       insertCard.run(
-        preparedCard.name,
-        preparedCard.team,
-        preparedCard.description,
-        preparedCard.lore,
-        preparedCard.image_url,
-        preparedCard.is_custom,
-        preparedCard.wakes_up_at_night,
-        preparedCard.wakes_up_every_night,
-        preparedCard.wake_up_frequency
+        card.name,
+        card.team,
+        card.description,
+        card.lore,
+        card.image_url,
+        card.is_custom,
+        card.wakes_up_at_night,
+        card.wakes_up_every_night,
+        card.wake_up_frequency
       );
     }
 
@@ -1100,21 +1061,13 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
 });
 
 app.get('/api/cards/:id', (req, res) => {
-  try {
-    const card = db.prepare('SELECT * FROM cards WHERE id = ?').get(req.params.id);
+  const card = db.prepare('SELECT * FROM cards WHERE id = ?').get(req.params.id);
 
-    if (!card) {
-      return res.status(404).json({ message: 'Carte non trouvée' });
-    }
-
-    // Convert SQLite integers to booleans for API
-    const formattedCard = cardUtils.prepareCardForApi(card);
-
-    res.json(formattedCard);
-  } catch (error) {
-    console.error('Error fetching card:', error);
-    res.status(500).json({ message: 'Error fetching card', error: error.message });
+  if (!card) {
+    return res.status(404).json({ message: 'Carte non trouvée' });
   }
+
+  res.json(card);
 });
 
 app.post('/api/cards', authenticateToken, (req, res) => {
@@ -1125,14 +1078,19 @@ app.post('/api/cards', authenticateToken, (req, res) => {
   }
 
   try {
-    // Validate card data before insertion
-    const validation = cardUtils.validateCard({ name, team, description });
-    if (!validation.valid) {
-      return res.status(400).json({ message: validation.error });
-    }
-
-    // Prepare card data for database
-    const dbCard = cardUtils.prepareCardForDb({
+    const result = db.prepare('INSERT INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      name,
+      team,
+      description,
+      lore,
+      image_url,
+      is_custom ? 1 : 0,
+      wakes_up_at_night ? 1 : 0,
+      wakes_up_every_night ? 1 : 0,
+      wake_up_frequency
+    );
+    res.status(201).json({
+      id: result.lastInsertRowid,
       name,
       team,
       description,
@@ -1143,34 +1101,6 @@ app.post('/api/cards', authenticateToken, (req, res) => {
       wakes_up_every_night,
       wake_up_frequency
     });
-
-    const result = db.prepare('INSERT INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-      dbCard.name,
-      dbCard.team,
-      dbCard.description,
-      dbCard.lore,
-      dbCard.image_url,
-      dbCard.is_custom,
-      dbCard.wakes_up_at_night,
-      dbCard.wakes_up_every_night,
-      dbCard.wake_up_frequency
-    );
-
-    // Convert back to API format
-    const newCard = cardUtils.prepareCardForApi({
-      id: result.lastInsertRowid,
-      name,
-      team,
-      description,
-      lore,
-      image_url,
-      is_custom: dbCard.is_custom,
-      wakes_up_at_night: dbCard.wakes_up_at_night,
-      wakes_up_every_night: dbCard.wakes_up_every_night,
-      wake_up_frequency
-    });
-
-    res.status(201).json(newCard);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la création de la carte', error: error.message });
   }
@@ -1185,14 +1115,25 @@ app.put('/api/cards/:id', authenticateToken, (req, res) => {
   }
 
   try {
-    // Validate card data before update
-    const validation = cardUtils.validateCard({ name, team, description });
-    if (!validation.valid) {
-      return res.status(400).json({ message: validation.error });
+    const result = db.prepare('UPDATE cards SET name = ?, team = ?, description = ?, lore = ?, image_url = ?, is_custom = ?, wakes_up_at_night = ?, wakes_up_every_night = ?, wake_up_frequency = ? WHERE id = ?').run(
+      name,
+      team,
+      description,
+      lore,
+      image_url,
+      is_custom ? 1 : 0,
+      wakes_up_at_night ? 1 : 0,
+      wakes_up_every_night ? 1 : 0,
+      wake_up_frequency,
+      id
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ message: 'Carte non trouvée' });
     }
 
-    // Prepare card data for database
-    const dbCard = cardUtils.prepareCardForDb({
+    res.json({
+      id,
       name,
       team,
       description,
@@ -1203,39 +1144,6 @@ app.put('/api/cards/:id', authenticateToken, (req, res) => {
       wakes_up_every_night,
       wake_up_frequency
     });
-
-    const result = db.prepare('UPDATE cards SET name = ?, team = ?, description = ?, lore = ?, image_url = ?, is_custom = ?, wakes_up_at_night = ?, wakes_up_every_night = ?, wake_up_frequency = ? WHERE id = ?').run(
-      dbCard.name,
-      dbCard.team,
-      dbCard.description,
-      dbCard.lore,
-      dbCard.image_url,
-      dbCard.is_custom,
-      dbCard.wakes_up_at_night,
-      dbCard.wakes_up_every_night,
-      dbCard.wake_up_frequency,
-      id
-    );
-
-    if (result.changes === 0) {
-      return res.status(404).json({ message: 'Carte non trouvée' });
-    }
-
-    // Convert back to API format
-    const updatedCard = cardUtils.prepareCardForApi({
-      id,
-      name,
-      team,
-      description,
-      lore,
-      image_url,
-      is_custom: dbCard.is_custom,
-      wakes_up_at_night: dbCard.wakes_up_at_night,
-      wakes_up_every_night: dbCard.wakes_up_every_night,
-      wake_up_frequency
-    });
-
-    res.json(updatedCard);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la mise à jour de la carte', error: error.message });
   }

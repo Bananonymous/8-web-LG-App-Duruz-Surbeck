@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import './AdminPanel.css';
 
+// Get API base URL from environment or use default
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
 const WakeUpOrderConfig = () => {
   const [variants, setVariants] = useState([]);
   const [selectedVariant, setSelectedVariant] = useState('base');
@@ -16,53 +19,104 @@ const WakeUpOrderConfig = () => {
   const [draggedItem, setDraggedItem] = useState(null);
   const [draggedOverItem, setDraggedOverItem] = useState(null);
 
-  // Fetch variants and cards
+  // Function to format API error messages
+  const formatErrorMessage = (error) => {
+    if (!error) return 'Une erreur inconnue est survenue';
+
+    // API returned error details
+    if (error.response && error.response.data) {
+      if (error.response.data.message) {
+        return `Erreur: ${error.response.data.message}`;
+      }
+    }
+
+    // Network errors
+    if (error.message === 'Network Error') {
+      return 'Erreur de connexion au serveur. Veuillez vérifier votre connexion internet et que le serveur est démarré.';
+    }
+
+    // Timeout errors
+    if (error.code === 'ECONNABORTED') {
+      return 'La requête a pris trop de temps. Veuillez réessayer.';
+    }
+
+    // Default error message
+    return `Erreur: ${error.message || 'Une erreur est survenue'}`;
+  };
+
+  // Fetch variants and cards with improved error handling
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError('');
+
+        // Create a cancelable request
+        const source = axios.CancelToken.source();
+        const timeout = setTimeout(() => {
+          source.cancel('Request timeout');
+          setError('La requête a pris trop de temps. Veuillez rafraîchir la page.');
+          setLoading(false);
+        }, 10000); // 10 second timeout
 
         // Fetch variants
-        const variantsResponse = await axios.get('http://localhost:5000/api/variants');
-        // Make sure variants is an array
-        if (Array.isArray(variantsResponse.data)) {
-          setVariants(variantsResponse.data);
-        } else {
-          console.error('Variants data is not an array:', variantsResponse.data);
-          setVariants([]);
-        }
+        try {
+          const variantsResponse = await axios.get(`${API_BASE_URL}/variants`, {
+            cancelToken: source.token
+          });
 
-        // Fetch cards
-        const cardsResponse = await axios.get('http://localhost:5000/api/cards');
-        console.log('Cards data:', cardsResponse.data);
-        setCards(cardsResponse.data);
-
-        // Set up the initial wake-up order with night cards
-        if (cardsResponse.data && Array.isArray(cardsResponse.data) && cardsResponse.data.length > 0) {
-          // Filter night cards directly
-          const nightCards = cardsResponse.data.filter(card => card.wakes_up_at_night === 1);
-          console.log('Night cards directly:', nightCards);
-
-          if (nightCards.length > 0) {
-            // Create default order
-            const defaultOrder = nightCards.map((card, index) => ({
-              id: card.id,
-              name: card.name,
-              order: index + 1,
-              isVariant: false
-            }));
-
-            console.log('Setting initial wake-up order:', defaultOrder);
-            setWakeUpOrder(defaultOrder);
+          if (Array.isArray(variantsResponse.data)) {
+            setVariants(variantsResponse.data);
           } else {
-            console.warn('No night cards found in the initial data');
-            setWakeUpOrder([]);
+            console.error('Variants data is not an array:', variantsResponse.data);
+            setVariants([]);
+            setError('Format de données incorrect pour les variantes');
           }
+        } catch (variantError) {
+          console.error('Error fetching variants:', variantError);
+          // Continue despite variant error
+          setVariants([]);
+          setError('Impossible de charger les variantes. ' + formatErrorMessage(variantError));
         }
 
+        // Fetch cards even if variants failed
+        try {
+          const cardsResponse = await axios.get(`${API_BASE_URL}/cards`, {
+            cancelToken: source.token
+          });
+
+          if (Array.isArray(cardsResponse.data)) {
+            setCards(cardsResponse.data);
+
+            // Set up the initial wake-up order with night cards
+            const nightCards = cardsResponse.data.filter(card => card.wakes_up_at_night === 1);
+
+            if (nightCards.length > 0) {
+              const defaultOrder = nightCards.map((card, index) => ({
+                id: card.id,
+                name: card.name,
+                order: index + 1,
+                isVariant: false
+              }));
+
+              setWakeUpOrder(defaultOrder);
+            } else {
+              console.warn('No night cards found in the initial data');
+              setWakeUpOrder([]);
+            }
+          } else {
+            console.error('Cards data is not an array:', cardsResponse.data);
+            setError(prev => prev ? prev + ' Format de données incorrect pour les cartes.' : 'Format de données incorrect pour les cartes.');
+          }
+        } catch (cardError) {
+          console.error('Error fetching cards:', cardError);
+          setError(prev => prev ? prev + ' Impossible de charger les cartes.' : 'Impossible de charger les cartes. ' + formatErrorMessage(cardError));
+        }
+
+        clearTimeout(timeout);
         setLoading(false);
       } catch (error) {
-        setError('Erreur lors du chargement des données');
+        setError('Erreur lors du chargement des données: ' + formatErrorMessage(error));
         setLoading(false);
         console.error('Error fetching data:', error);
       }
@@ -70,8 +124,6 @@ const WakeUpOrderConfig = () => {
 
     fetchData();
   }, []);
-
-
 
   // Update wake-up order when cards are loaded
   useEffect(() => {
@@ -91,8 +143,6 @@ const WakeUpOrderConfig = () => {
     }
   }, [cards]);
 
-
-
   // Handle variant change
   const handleVariantChange = (e) => {
     const newVariantId = e.target.value;
@@ -107,7 +157,7 @@ const WakeUpOrderConfig = () => {
 
       // First, try to fetch existing wake-up order from the server
       try {
-        const response = await axios.get(`http://localhost:5000/api/wake-up-order/${variantId}?includeBase=${includeBase}`);
+        const response = await axios.get(`${API_BASE_URL}/wake-up-order/${variantId}?includeBase=${includeBase}`);
         console.log('Fetched wake-up order:', response.data);
 
         if (response.data && response.data.order && response.data.order.length > 0) {
@@ -143,7 +193,7 @@ const WakeUpOrderConfig = () => {
         setWakeUpOrder(defaultOrder);
       } else {
         // For variants, we need to fetch variant cards
-        const variantCardsResponse = await axios.get(`http://localhost:5000/api/variant-cards?variant_id=${variantId}`);
+        const variantCardsResponse = await axios.get(`${API_BASE_URL}/variant-cards?variant_id=${variantId}`);
         const variantNightCards = variantCardsResponse.data.filter(card =>
           card.wakes_up_at_night === 1 || card.wakes_up_at_night === true
         );
@@ -194,8 +244,6 @@ const WakeUpOrderConfig = () => {
 
     setWakeUpOrder(sortedOrder);
   };
-
-
 
   // Toggle between drag mode and manual input mode
   const toggleDragMode = () => {
@@ -322,14 +370,32 @@ const WakeUpOrderConfig = () => {
     setWakeUpOrder(updatedOrder);
   };
 
-  // Save wake-up order
+  // Save wake-up order with improved error handling
   const saveWakeUpOrder = async () => {
     try {
       setSaving(true);
       setError('');
+      setSuccess('');
 
+      // Validate the data before sending
       if (!Array.isArray(wakeUpOrder) || wakeUpOrder.length === 0) {
         setError('Aucun rôle à sauvegarder. Veuillez sélectionner une variante avec des rôles qui se réveillent la nuit.');
+        setSaving(false);
+        return;
+      }
+
+      // Validate selected variant
+      if (!selectedVariant) {
+        setError('Veuillez sélectionner une variante.');
+        setSaving(false);
+        return;
+      }
+
+      // Validate that all roles have unique order values
+      const orderValues = wakeUpOrder.map(item => item.order);
+      const uniqueOrderValues = new Set(orderValues);
+      if (uniqueOrderValues.size !== orderValues.length) {
+        setError('Chaque rôle doit avoir un ordre de réveil unique. Veuillez corriger les doublons.');
         setSaving(false);
         return;
       }
@@ -347,28 +413,58 @@ const WakeUpOrderConfig = () => {
         order: simplifiedOrder
       });
 
-      const response = await axios.post('http://localhost:5000/api/wake-up-order', {
-        variant_id: selectedVariant,
-        include_base: includeBaseCards,
-        order: simplifiedOrder
-      });
+      // Create a cancelable request
+      const source = axios.CancelToken.source();
+      const timeout = setTimeout(() => {
+        source.cancel('Request timeout');
+        setError('La sauvegarde a pris trop de temps. Veuillez réessayer.');
+        setSaving(false);
+      }, 10000); // 10 second timeout
 
-      console.log('Save response:', response.data);
+      try {
+        const response = await axios.post(`${API_BASE_URL}/wake-up-order`, {
+          variant_id: selectedVariant,
+          include_base: includeBaseCards,
+          order: simplifiedOrder
+        }, {
+          cancelToken: source.token,
+          timeout: 10000 // Additional 10 second timeout as backup
+        });
 
-      setSuccess('Ordre de réveil sauvegardé avec succès');
-      setSaving(false);
+        console.log('Save response:', response.data);
+        clearTimeout(timeout);
 
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccess('');
-      }, 3000);
-    } catch (error) {
-      setError('Erreur lors de la sauvegarde de l\'ordre de réveil');
-      setSaving(false);
-      console.error('Error saving wake-up order:', error);
-      if (error.response) {
-        console.error('Error response:', error.response.data);
+        setSuccess('Ordre de réveil sauvegardé avec succès');
+
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSuccess('');
+        }, 3000);
+      } catch (apiError) {
+        console.error('Error from API when saving wake-up order:', apiError);
+
+        if (apiError.response) {
+          // Server responded with error
+          if (apiError.response.status === 400) {
+            setError(`Erreur de validation: ${apiError.response.data.message || 'Les données envoyées sont incorrectes'}`);
+          } else if (apiError.response.status === 401 || apiError.response.status === 403) {
+            setError('Vous n\'avez pas les droits pour effectuer cette action. Veuillez vous reconnecter.');
+          } else {
+            setError(`Erreur du serveur (${apiError.response.status}): ${apiError.response.data.message || 'Une erreur est survenue'}`);
+          }
+        } else if (apiError.request) {
+          // No response received
+          setError('Aucune réponse reçue du serveur. Veuillez vérifier votre connexion et réessayer.');
+        } else {
+          // Other error
+          setError('Erreur lors de la sauvegarde: ' + formatErrorMessage(apiError));
+        }
       }
+    } catch (error) {
+      setError('Erreur inattendue: ' + formatErrorMessage(error));
+      console.error('Unexpected error saving wake-up order:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
