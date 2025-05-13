@@ -154,6 +154,7 @@ const MJPage = () => {
           gameConfig={gameConfig}
           onRestart={handleRestartGame}
           onGameConfigUpdate={handleGameConfigUpdate}
+          setGameConfig={setGameConfig}
         />
       )}
     </div>

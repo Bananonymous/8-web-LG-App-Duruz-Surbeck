@@ -258,9 +258,9 @@ const PlayerSetup = ({ playerCount, selectedCards, onComplete, onBack }) => {
                   }}
                 >
                   <option value="">Sélectionner une carte</option>
-                  {allCards.map(card => (
+                  {allCards.map((card, index) => (
                     <option
-                      key={`${card.type}-${card.id}`}
+                      key={`${card.type}-${card.id}-${index}`}
                       value={`${card.type}-${card.id}`}
                     >
                       {card.name}

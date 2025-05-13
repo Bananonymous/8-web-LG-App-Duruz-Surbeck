@@ -132,8 +132,8 @@ VALUES
 'Malchanceux, il est toujours celui qu''on accuse en cas de doute.',
 '/images/bouc_emissaire.png', 0, 0, 0, null),
 
-('Ancien', 'Village', 's''il est tué durant le vote du village, tous les joueurs sauf loup-garou perdent leur pouvoir',
-'Respecté pour sa sagesse, sa mort injuste provoque la perte de foi des villageois.',
+('Ancien', 'Village', 'peut survivre à la première attaque contre lui, mais si tué par le village, tous les villageois perdent leurs pouvoirs',
+'Respecté pour sa sagesse et sa résilience, sa mort injuste provoque la perte de foi des villageois.',
 '/images/ancien.png', 0, 0, 0, null),
 
 ('Corbeau', 'Village', 'chaque nuit, il désigne un joueur qui aura deux plus contre lui lors du vote du village',
