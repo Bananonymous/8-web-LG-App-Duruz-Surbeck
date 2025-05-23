@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import './AdminPanel.css';
+import '../Admin/AdminPanel.css';
 
 // Get API base URL from environment or use default
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -89,7 +89,14 @@ const WakeUpOrderConfig = () => {
             setCards(cardsResponse.data);
 
             // Set up the initial wake-up order with night cards
-            const nightCards = cardsResponse.data.filter(card => card.wakes_up_at_night === 1);
+            // Check for both numeric 1 and boolean true values for wakes_up_at_night
+            const nightCards = cardsResponse.data.filter(card =>
+              card.wakes_up_at_night === 1 ||
+              card.wakes_up_at_night === true ||
+              card.wakes_up_at_night === "1"
+            );
+
+            console.log('Found night cards:', nightCards.map(c => ({ id: c.id, name: c.name, wakes_up_at_night: c.wakes_up_at_night })));
 
             if (nightCards.length > 0) {
               const defaultOrder = nightCards.map((card, index) => ({
@@ -102,6 +109,8 @@ const WakeUpOrderConfig = () => {
               setWakeUpOrder(defaultOrder);
             } else {
               console.warn('No night cards found in the initial data');
+              // Log all cards to help debug
+              console.log('All cards:', cardsResponse.data.map(c => ({ id: c.id, name: c.name, wakes_up_at_night: c.wakes_up_at_night, type: typeof c.wakes_up_at_night })));
               setWakeUpOrder([]);
             }
           } else {
@@ -128,8 +137,14 @@ const WakeUpOrderConfig = () => {
   // Update wake-up order when cards are loaded
   useEffect(() => {
     if (cards.length > 0) {
-      // For base game, use all night cards
-      const nightCards = cards.filter(card => card.wakes_up_at_night === 1);
+      // For base game, use all night cards - check for all possible true values
+      const nightCards = cards.filter(card =>
+        card.wakes_up_at_night === 1 ||
+        card.wakes_up_at_night === true ||
+        card.wakes_up_at_night === "1"
+      );
+
+      console.log('Updated night cards from cards change:', nightCards.map(c => ({ id: c.id, name: c.name, wakes_up_at_night: c.wakes_up_at_night })));
 
       // Create default order
       const defaultOrder = nightCards.map((card, index) => ({
@@ -160,9 +175,12 @@ const WakeUpOrderConfig = () => {
         const response = await axios.get(`${API_BASE_URL}/wake-up-order/${variantId}?includeBase=${includeBase}`);
         console.log('Fetched wake-up order:', response.data);
 
-        if (response.data && response.data.order && response.data.order.length > 0) {
+        // Check for both possible response formats: order or order_data
+        const orderData = response.data.order_data || response.data.order;
+
+        if (response.data && orderData && orderData.length > 0) {
           // Add isVariant property for UI display
-          const savedOrder = response.data.order.map(item => ({
+          const savedOrder = orderData.map(item => ({
             ...item,
             isVariant: variantId !== 'base' && !includeBase ? true : false
           }));
@@ -179,8 +197,14 @@ const WakeUpOrderConfig = () => {
 
       // If no saved order exists, create a default one
       if (variantId === 'base') {
-        // For base game, use all night cards
-        const nightCards = cards.filter(card => card.wakes_up_at_night === 1);
+        // For base game, use all night cards - check for all possible true values
+        const nightCards = cards.filter(card =>
+          card.wakes_up_at_night === 1 ||
+          card.wakes_up_at_night === true ||
+          card.wakes_up_at_night === "1"
+        );
+
+        console.log('Base game night cards:', nightCards.map(c => ({ id: c.id, name: c.name, wakes_up_at_night: c.wakes_up_at_night })));
 
         // Create default order
         const defaultOrder = nightCards.map((card, index) => ({
@@ -195,12 +219,20 @@ const WakeUpOrderConfig = () => {
         // For variants, we need to fetch variant cards
         const variantCardsResponse = await axios.get(`${API_BASE_URL}/variant-cards?variant_id=${variantId}`);
         const variantNightCards = variantCardsResponse.data.filter(card =>
-          card.wakes_up_at_night === 1 || card.wakes_up_at_night === true
+          card.wakes_up_at_night === 1 ||
+          card.wakes_up_at_night === true ||
+          card.wakes_up_at_night === "1"
         );
+
+        console.log('Variant night cards:', variantNightCards.map(c => ({ id: c.id, name: c.name, wakes_up_at_night: c.wakes_up_at_night })));
 
         let allNightCards = [];
         if (includeBase) {
-          const baseNightCards = cards.filter(card => card.wakes_up_at_night === 1);
+          const baseNightCards = cards.filter(card =>
+            card.wakes_up_at_night === 1 ||
+            card.wakes_up_at_night === true ||
+            card.wakes_up_at_night === "1"
+          );
           allNightCards = [...baseNightCards, ...variantNightCards];
         } else {
           allNightCards = variantNightCards;
@@ -407,11 +439,15 @@ const WakeUpOrderConfig = () => {
         order: item.order
       }));
 
-      console.log('Saving simplified wake-up order:', {
+      // Prepare the data according to the API requirements
+      // The API expects variant_id and order_data fields
+      const requestData = {
         variant_id: selectedVariant,
         include_base: includeBaseCards,
-        order: simplifiedOrder
-      });
+        order_data: simplifiedOrder // Changed from 'order' to 'order_data'
+      };
+
+      console.log('Saving wake-up order with data:', requestData);
 
       // Create a cancelable request
       const source = axios.CancelToken.source();
@@ -422,11 +458,7 @@ const WakeUpOrderConfig = () => {
       }, 10000); // 10 second timeout
 
       try {
-        const response = await axios.post(`${API_BASE_URL}/wake-up-order`, {
-          variant_id: selectedVariant,
-          include_base: includeBaseCards,
-          order: simplifiedOrder
-        }, {
+        const response = await axios.post(`${API_BASE_URL}/wake-up-order`, requestData, {
           cancelToken: source.token,
           timeout: 10000 // Additional 10 second timeout as backup
         });

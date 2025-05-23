@@ -1,19 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
-// Composants
-import Home from './components/Home';
-import CardList from './components/CardList';
-import CardDetail from './components/CardDetail';
+// Components organized by feature
+import { Home, Navbar } from './components/Layout';
+import { CardList, CardDetail } from './components/Cards';
 import Calendar from './components/Calendar';
-import Login from './components/Login';
-import AdminPanel from './components/AdminPanel';
-import Navbar from './components/Navbar';
-import ProtectedRoute from './components/ProtectedRoute';
-import VariantList from './components/VariantList';
-import VariantLore from './components/VariantLore';
-import VariantCardDetail from './components/VariantCardDetail';
-import MJPage from './components/MJPage';
+import { Login, ProtectedRoute } from './components/Auth';
+import { AdminPanel } from './components/Admin';
+import { VariantList, VariantLore, VariantCardDetail } from './components/Variants';
+import { MJPage } from './components/Game';
 
 // Contextes
 import { AuthProvider } from './context/AuthContext';

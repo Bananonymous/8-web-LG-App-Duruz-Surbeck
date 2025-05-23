@@ -16,7 +16,7 @@ SERVER_PID=$!
 
 # Démarrer le client
 echo "Démarrage du client..."
-npm run dev
+npm run dev 
 
 # Arrêter le serveur lorsque le client est arrêté
 kill $SERVER_PID

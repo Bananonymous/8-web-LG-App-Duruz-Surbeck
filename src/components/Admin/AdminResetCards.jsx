@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import './MJPage.css';
+import '../Game/MJPage.css';
 
 const AdminResetCards = () => {
   const [message, setMessage] = useState('');

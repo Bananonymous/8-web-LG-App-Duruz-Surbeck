@@ -79,10 +79,13 @@ const GameSetup = ({ onComplete }) => {
 
   // Handle card selection
   const handleCardSelection = (card) => {
-    // Generate a unique ID for this card instance
-    const cardInstanceId = Date.now();
+    // Count how many of this card type we already have
+    const existingCount = selectedCards.filter(c => c.id === card.id && c.type === card.type).length;
 
-    // Add the card with a unique instance ID
+    // Generate a stable instance ID based on card type, id, and instance number
+    const cardInstanceId = `${card.type}-${card.id}-instance-${existingCount}`;
+
+    // Add the card with a stable instance ID
     setSelectedCards([...selectedCards, {
       ...card,
       instanceId: cardInstanceId

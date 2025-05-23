@@ -17,6 +17,11 @@ const cardUtils = require('./lib/cardUtils.cjs');
 // Import our logger
 const { createLogger } = require('./lib/logger.cjs');
 const logger = createLogger('Server');
+// Import database initialization module
+const { initializeDatabase } = require('./db-init.cjs');
+
+// Import routes
+const googleCalendarRoutes = require('./server/routes/googleCalendar.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,536 +45,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Use routes
+app.use('/api/google-calendar', googleCalendarRoutes);
+
 // Connexion à la base de données SQLite
 const db = new Database(path.join(__dirname, 'database.sqlite'), { verbose: console.log });
 
-// Initialisation de la base de données
-function initializeDatabase() {
-  // Création de la table des cartes
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS cards (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      team TEXT NOT NULL,
-      description TEXT NOT NULL,
-      lore TEXT,
-      image_url TEXT,
-      is_custom BOOLEAN DEFAULT 0,
-      wakes_up_at_night BOOLEAN DEFAULT 0,
-      wakes_up_every_night BOOLEAN DEFAULT 0,
-      wake_up_frequency TEXT
-    )
-  `);
-
-  // Création de la table des utilisateurs (admins)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      is_admin BOOLEAN DEFAULT 0
-    )
-  `);
-
-  // Création de la table des événements du calendrier
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      date TEXT NOT NULL,
-      description TEXT,
-      location TEXT
-    )
-  `);
-
-  // Création de la table des variantes
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS variants (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      description TEXT NOT NULL,
-      lore TEXT,
-      image_url TEXT
-    )
-  `);
-
-  // Création de la table des cartes de variantes
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS variant_cards (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      variant_id INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      team TEXT NOT NULL,
-      description TEXT NOT NULL,
-      lore TEXT,
-      image_url TEXT,
-      wakes_up_at_night BOOLEAN DEFAULT 0,
-      wakes_up_every_night BOOLEAN DEFAULT 0,
-      wake_up_frequency TEXT,
-      FOREIGN KEY (variant_id) REFERENCES variants (id) ON DELETE CASCADE
-    )
-  `);
-
-  // Création de la table pour l'ordre de réveil des rôles
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS wake_up_order (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      variant_id TEXT NOT NULL,
-      include_base BOOLEAN DEFAULT 1,
-      order_data TEXT NOT NULL
-    )
-  `);
-
-  // Vérifier si un admin existe déjà, sinon en créer un
-  const adminExists = db.prepare('SELECT * FROM users WHERE is_admin = 1 LIMIT 1').get();
-  if (!adminExists) {
-    const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
-    db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)').run(ADMIN_USERNAME, hashedPassword, 1);
-    console.log(`Admin utilisateur créé avec le nom d'utilisateur: ${ADMIN_USERNAME} et le mot de passe: ${ADMIN_PASSWORD}`);
+// Initialiser la base de données avec notre nouveau module
+initializeDatabase(db, {
+  credentials: {
+    username: ADMIN_USERNAME,
+    password: ADMIN_PASSWORD
   }
-
-  // Ajouter quelques cartes par défaut si la table est vide
-  const cardsCount = db.prepare('SELECT COUNT(*) as count FROM cards').get().count;
-  if (cardsCount === 0) {
-    const defaultCards = [
-      // Rôles de base
-      {
-        name: 'Loup-Garou',
-        team: 'Loups-Garous',
-        description: 'se réveille chaque nuit en meute pour faire une victime',
-        lore: 'Créatures mythiques mi-homme mi-loup, ils se cachent parmi les villageois le jour et les dévorent la nuit.',
-        image_url: '/images/loup-garou.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Simple villageois',
-        team: 'Village',
-        description: 'vote chaque jour avec le village pour tuer quelqu\'un',
-        lore: 'Simples habitants du village, ils doivent faire preuve de perspicacité pour démasquer les Loups-Garous.',
-        image_url: '/images/villageois.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Voyante',
-        team: 'Village',
-        description: 'se réveille chaque nuit pour connaître l\'identité d\'une personne',
-        lore: 'Dotée de pouvoirs de divination, elle aide le village à identifier les Loups-Garous.',
-        image_url: '/images/voyante.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Voleur',
-        team: 'Village',
-        description: 'chaque nuit, le voleur échange sa carte avec un autre joueur',
-        lore: 'Opportuniste, il peut changer de rôle au début de la partie selon ce qui l\'arrange.',
-        image_url: '/images/voleur.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Chasseur',
-        team: 'Village',
-        description: 'lorsqu\'il meurt, peut tuer quelqu\'un avec lui',
-        lore: 'Même dans la mort, le Chasseur ne part pas sans emporter quelqu\'un avec lui.',
-        image_url: '/images/chasseur.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Cupidon',
-        team: 'Village',
-        description: 'la première nuit, il désigne deux joueurs qui seront amoureux',
-        lore: 'Ses flèches créent un lien indéfectible : si l\'un des amoureux meurt, l\'autre meurt de chagrin.',
-        image_url: '/images/cupidon.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "first_night_only"
-      },
-      {
-        name: 'Sorcière',
-        team: 'Village',
-        description: 'possède des potions de vie et de mort',
-        lore: 'Experte en potions, elle peut sauver une victime des Loups-Garous ou éliminer un joueur de son choix.',
-        image_url: '/images/sorciere.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Petite fille',
-        team: 'Village',
-        description: 'peut tenter d\'épier les loups pendant qu\'ils choisissent une victime',
-        lore: 'Curieuse et intrépide, elle risque sa vie pour obtenir des informations précieuses.',
-        image_url: '/images/petite-fille.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-
-      // Extensions
-      {
-        name: 'Salvateur',
-        team: 'Village',
-        description: 'choisit une personne chaque nuit qui sera protégé de la mort',
-        lore: 'Protecteur du village, il peut empêcher la mort d\'un villageois chaque nuit.',
-        image_url: '/images/salvateur.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Idiot du village',
-        team: 'Village',
-        description: 's\'il est tué par le vote du village, il est épargné mais perd le droit de vote',
-        lore: 'Sa naïveté le protège parfois des accusations du village, mais lui fait perdre sa crédibilité.',
-        image_url: '/images/idiot-du-village.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Bouc émissaire',
-        team: 'Village',
-        description: 's\'il y a égalité dans un vote du village, c\'est lui est tué à la place',
-        lore: 'Malchanceux, il est toujours celui qu\'on accuse en cas de doute.',
-        image_url: '/images/bouc-emissaire.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Ancien',
-        team: 'Village',
-        description: 's\'il est tué durant le vote du village, tous les joueurs sauf loup-garou perdent leur pouvoir',
-        lore: 'Respecté pour sa sagesse, sa mort injuste provoque la perte de foi des villageois.',
-        image_url: '/images/ancien.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Joueur de flûte',
-        team: 'Seul',
-        description: 'chaque nuit, enchante une personne, il gagne lorsque tout le village est enchanté',
-        lore: 'Son objectif est de charmer tous les joueurs encore en vie pour gagner la partie.',
-        image_url: '/images/joueur-de-flute.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Loup-garou blanc',
-        team: 'Seul',
-        description: 'une nuit sur deux, tue un joueur',
-        lore: 'Solitaire et traître, il joue un double jeu pour être le dernier survivant.',
-        image_url: '/images/loup-garou-blanc.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "1/2"
-      },
-      {
-        name: 'Corbeau',
-        team: 'Village',
-        description: 'chaque nuit, il désigne un joueur qui aura deux plus contre lui lors du vote du village',
-        lore: 'Son croassement sinistre attire l\'attention du village sur sa cible.',
-        image_url: '/images/corbeau.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Enfant sauvage',
-        team: 'Village',
-        description: 'choisit un joueur modèle en début de partie, si celui-ci est tué par un loup, il devient un loup',
-        lore: 'Élevé par les loups, il reste fidèle à son modèle humain, mais peut retourner à ses instincts sauvages.',
-        image_url: '/images/enfant-sauvage.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "first_night_only"
-      },
-      {
-        name: 'Renard',
-        team: 'Village',
-        description: 'chaque nuit, il choisit 3 joueurs, si l\'un d\'entre eux est loup, il garde son pouvoir',
-        lore: 'Rusé et perspicace, il peut flairer la présence des loups-garous.',
-        image_url: '/images/renard.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Servante dévouée',
-        team: 'Village',
-        description: 'lorsqu\'un joueur est mort, avant que son rôle soit révélé, elle peut échanger son rôle avec avec lui',
-        lore: 'Loyale jusqu\'au bout, elle est prête à prendre la place d\'un autre pour le bien du village.',
-        image_url: '/images/servante-devouee.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Trois frères',
-        team: 'Village',
-        description: 'peuvent se réveiller et communiquer sans parler',
-        lore: 'Liés par le sang, ils s\'entraident pour démasquer les Loups-Garous.',
-        image_url: '/images/trois-freres.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Deux soeurs',
-        team: 'Village',
-        description: 'peuvent se réveiller et communiquer sans parler',
-        lore: 'Unies par un lien indéfectible, elles partagent leurs secrets et intuitions.',
-        image_url: '/images/deux-soeurs.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Montreur d\'ours',
-        team: 'Village',
-        description: 'si son ours grogne le matin, alors l\'un des joueurs à côté de lui est un loup',
-        lore: 'Son ours peut sentir la présence des loups-garous parmi les voisins de son maître.',
-        image_url: '/images/montreur-ours.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Comédien',
-        team: 'Village',
-        description: 'pendant les trois premières nuits, il change de rôle',
-        lore: 'Maître du déguisement, il peut imiter les pouvoirs des autres pour aider le village.',
-        image_url: '/images/comedien.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: "1/3"
-      },
-      {
-        name: 'Chevalier à l\'épée rouillée',
-        team: 'Village',
-        description: 's\'il est tué par les loups, ils ne font pas de victime la nuit suivante, et le premier loup à sa droite meurt',
-        lore: 'Son épée rouillée mais redoutable peut blesser mortellement un loup-garou lors de sa dernière bataille.',
-        image_url: '/images/chevalier-epee.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Juge bègue',
-        team: 'Village',
-        description: 'peut une fois, grâce à signe dicret convenu à l\'avance, choisir d\'effectuer un second vote du village',
-        lore: 'Malgré son bégaiement, il peut ordonner un second vote quand il sent une injustice.',
-        image_url: '/images/juge-begue.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Ange déchu',
-        team: 'Seul',
-        description: 'gagne s\'il meurt la première nuit ou le premier jour, la partie s\'arrête',
-        lore: 'Être céleste dont la mission est de protéger le village, mais qui peut aussi chercher le martyre.',
-        image_url: '/images/ange-dechu.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Abominable sectaire',
-        team: 'Seul',
-        description: 'divise le groupe en deux selon un critère, gagne lorsque les joueurs de l\'autre groupe que le sien sont morts',
-        lore: 'Fanatique et déterminé, il traque les Loups-Garous avec une ferveur religieuse.',
-        image_url: '/images/abominable-sectaire.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Infect père des loups',
-        team: 'Seul',
-        description: 'une fois dans la partie, peut convertir la victime des loups en loup',
-        lore: 'Son pouvoir ancestral lui permet de transformer un humain en loup-garou.',
-        image_url: '/images/infect-pere-loups.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "1/3"
-      },
-      {
-        name: 'Chien-loup',
-        team: 'Village',
-        description: 'en début de partie, peut choisir entre villageois ou loup',
-        lore: 'Déchiré entre deux natures, il doit choisir son camp au début de la partie.',
-        image_url: '/images/chien-loup.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "first_night_only"
-      },
-      {
-        name: 'Grand méchant loup',
-        team: 'Loups',
-        description: 'tant que personne du clan des loups n\'est mort, se réveille seul après les loups pour faire une deuxième victime',
-        lore: 'Le plus redoutable des loups-garous, il peut faire une victime supplémentaire tant que sa meute est intacte.',
-        image_url: '/images/grand-mechant-loup.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      }
-    ];
-
-    const insertCard = db.prepare('INSERT INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-    for (const card of defaultCards) {
-      insertCard.run(
-        card.name,
-        card.team,
-        card.description,
-        card.lore,
-        card.image_url,
-        card.is_custom,
-        card.wakes_up_at_night,
-        card.wakes_up_every_night,
-        card.wake_up_frequency
-      );
-    }
-    console.log('Cartes par défaut ajoutées');
-  }
-
-  // Ajouter quelques événements par défaut si la table est vide
-  const eventsCount = db.prepare('SELECT COUNT(*) as count FROM events').get().count;
-  if (eventsCount === 0) {
-    const defaultEvents = [
-      {
-        title: 'Soirée Loups-Garous',
-        date: '2023-12-15',
-        description: 'Venez jouer aux Loups-Garous de Thiercelieux !',
-        location: 'Ludothèque de la ville'
-      },
-      {
-        title: 'Tournoi Loups-Garous',
-        date: '2024-01-20',
-        description: 'Grand tournoi annuel de Loups-Garous',
-        location: 'Salle des fêtes'
-      }
-    ];
-
-    const insertEvent = db.prepare('INSERT INTO events (title, date, description, location) VALUES (?, ?, ?, ?)');
-    for (const event of defaultEvents) {
-      insertEvent.run(event.title, event.date, event.description, event.location);
-    }
-    console.log('Événements par défaut ajoutés');
-  }
-
-  // Ajouter quelques variantes par défaut si la table est vide
-  const variantsCount = db.prepare('SELECT COUNT(*) as count FROM variants').get().count;
-  if (variantsCount === 0) {
-    const defaultVariants = [
-      {
-        name: 'Nouvelle Lune',
-        description: 'Une variante qui introduit de nouveaux rôles et mécaniques de jeu.',
-        lore: 'Sous la nouvelle lune, des pouvoirs mystérieux s\'éveillent et de nouvelles alliances se forment dans le village de Thiercelieux.',
-        image_url: '/images/nouvelle-lune.svg'
-      }
-    ];
-
-    const insertVariant = db.prepare('INSERT INTO variants (name, description, lore, image_url) VALUES (?, ?, ?, ?)');
-    for (const variant of defaultVariants) {
-      insertVariant.run(variant.name, variant.description, variant.lore, variant.image_url);
-    }
-    console.log('Variantes par défaut ajoutées');
-  }
-
-  // Ajouter quelques cartes de variante par défaut si la table est vide
-  const variantCardsCount = db.prepare('SELECT COUNT(*) as count FROM variant_cards').get().count;
-  if (variantCardsCount === 0) {
-    // Récupérer l'ID de la variante "Nouvelle Lune"
-    const nouvelleLune = db.prepare('SELECT id FROM variants WHERE name = ?').get('Nouvelle Lune');
-
-    if (nouvelleLune) {
-      const defaultVariantCards = [
-        {
-          variant_id: nouvelleLune.id,
-          name: 'Chaman',
-          team: 'Village',
-          description: 'Le Chaman peut communiquer avec les morts une fois par nuit.',
-          lore: 'Gardien des traditions ancestrales, il peut entrer en contact avec l\'au-delà pour guider les vivants.',
-          image_url: '/images/chaman.svg',
-          wakes_up_at_night: 1,
-          wakes_up_every_night: 1,
-          wake_up_frequency: null
-        },
-        {
-          variant_id: nouvelleLune.id,
-          name: 'Loup Alpha',
-          team: 'Loups-Garous',
-          description: 'Le Loup Alpha peut transformer un villageois en Loup-Garou une fois par partie.',
-          lore: 'Chef de la meute, son hurlement peut réveiller la bête qui sommeille en chaque humain.',
-          image_url: '/images/loup-alpha.svg',
-          wakes_up_at_night: 1,
-          wakes_up_every_night: 0,
-          wake_up_frequency: "1/3 nights"
-        }
-      ];
-
-      const insertVariantCard = db.prepare('INSERT INTO variant_cards (variant_id, name, team, description, lore, image_url, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-      for (const card of defaultVariantCards) {
-        insertVariantCard.run(
-          card.variant_id,
-          card.name,
-          card.team,
-          card.description,
-          card.lore,
-          card.image_url,
-          card.wakes_up_at_night,
-          card.wakes_up_every_night,
-          card.wake_up_frequency
-        );
-      }
-      console.log('Cartes de variante par défaut ajoutées');
-    }
-  }
-}
-
-// Initialiser la base de données
-initializeDatabase();
+});
 
 // Middleware d'authentification
 const authenticateToken = (req, res, next) => {
@@ -633,482 +121,36 @@ app.get('/api/cards', (req, res) => {
     const cards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
 
     // Convert SQLite integer values to booleans for API response
-    const formattedCards = cards.map(card => cardUtils.prepareCardForApi(card));
+    const formattedCards = cards.map(card => ({
+      ...card,
+      is_custom: Boolean(card.is_custom),
+      wakes_up_at_night: Boolean(card.wakes_up_at_night),
+      wakes_up_every_night: Boolean(card.wakes_up_every_night)
+    }));
 
     res.json(formattedCards);
   } catch (error) {
     console.error('Error fetching cards:', error);
-    res.status(500).json({
-      message: 'Error fetching cards',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Error fetching cards', error: error.message });
   }
 });
 
-// Route pour diagnostiquer et réparer les IDs des cartes
-app.post('/api/fix-card-ids', (req, res) => {
-  try {
-    // Get current cards
-    const cards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
-    console.log(`Found ${cards.length} cards before fixing`);
-
-    // Check if there's a problem with the IDs
-    const minId = Math.min(...cards.map(c => c.id));
-    console.log(`Minimum card ID: ${minId}`);
-
-    if (minId > 1 || cards.some((card, index) => card.id !== index + 1)) {
-      // There's a problem with the IDs, let's fix it
-      console.log('Fixing card IDs using optimized approach...');
-
-      // Create a backup first
-      db.exec('CREATE TABLE IF NOT EXISTS cards_backup AS SELECT * FROM cards');
-
-      // Reset the SQLite sequence counter
-      db.exec('DELETE FROM sqlite_sequence WHERE name="cards"');
-
-      // Use a transaction for better performance
-      db.transaction(() => {
-        // Recreate table structure with proper autoincrement
-        db.exec(`
-          CREATE TABLE cards_new (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            team TEXT NOT NULL,
-            description TEXT NOT NULL,
-            lore TEXT,
-            image_url TEXT,
-            is_custom BOOLEAN DEFAULT 0,
-            wakes_up_at_night BOOLEAN DEFAULT 0,
-            wakes_up_every_night BOOLEAN DEFAULT 0,
-            wake_up_frequency TEXT
-          );
-          
-          -- Copy all data in proper order
-          INSERT INTO cards_new (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency)
-          SELECT name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency 
-          FROM cards 
-          ORDER BY id ASC;
-          
-          -- Drop the old table and rename the new one
-          DROP TABLE cards;
-          ALTER TABLE cards_new RENAME TO cards;
-        `);
-      })();
-
-      // Get the fixed cards
-      const fixedCards = db.prepare('SELECT * FROM cards ORDER BY id ASC').all();
-      console.log(`Found ${fixedCards.length} cards after fixing`);
-      console.log('First few card IDs after fixing:', fixedCards.slice(0, 5).map(c => c.id));
-
-      // Validate the fix worked properly
-      const allIdsFixed = fixedCards.every((card, index) => card.id === index + 1);
-
-      res.status(200).json({
-        message: allIdsFixed ? 'Card IDs fixed successfully' : 'Attempted to fix card IDs but validation check failed',
-        before: {
-          count: cards.length,
-          minId: minId,
-          maxId: Math.max(...cards.map(c => c.id))
-        },
-        after: {
-          count: fixedCards.length,
-          minId: Math.min(...fixedCards.map(c => c.id)),
-          maxId: Math.max(...fixedCards.map(c => c.id)),
-          allIdsSequential: allIdsFixed
-        }
-      });
-    } else {
-      res.status(200).json({
-        message: 'Card IDs are already correct and sequential',
-        count: cards.length,
-        minId: minId,
-        maxId: Math.max(...cards.map(c => c.id)),
-        allIdsSequential: true
-      });
-    }
-  } catch (error) {
-    console.error('Error fixing card IDs:', error);
-    res.status(500).json({
-      message: 'Error fixing card IDs',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-// Route pour réinitialiser et repeupler la table des cartes
-app.post('/api/reset-cards', authenticateToken, (req, res) => {
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
-  try {
-    // Approche radicale: vider complètement la table et réinitialiser la séquence
-    db.exec('DELETE FROM cards; DELETE FROM sqlite_sequence WHERE name=\'cards\';');
-
-    // Réinsérer toutes les cartes par défaut
-    const defaultCards = [
-      // Rôles de base
-      {
-        name: 'Loup-Garou',
-        team: 'Loups-Garous',
-        description: 'se réveille chaque nuit en meute pour faire une victime',
-        lore: 'Créatures mythiques mi-homme mi-loup, ils se cachent parmi les villageois le jour et les dévorent la nuit.',
-        image_url: '/images/loup-garou.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Simple villageois',
-        team: 'Village',
-        description: 'vote chaque jour avec le village pour tuer quelqu\'un',
-        lore: 'Simples habitants du village, ils doivent faire preuve de perspicacité pour démasquer les Loups-Garous.',
-        image_url: '/images/villageois.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Voyante',
-        team: 'Village',
-        description: 'se réveille chaque nuit pour connaître l\'identité d\'une personne',
-        lore: 'Dotée de pouvoirs de divination, elle aide le village à identifier les Loups-Garous.',
-        image_url: '/images/voyante.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Voleur',
-        team: 'Village',
-        description: 'chaque nuit, le voleur échange sa carte avec un autre joueur',
-        lore: 'Opportuniste, il peut changer de rôle au début de la partie selon ce qui l\'arrange.',
-        image_url: '/images/voleur.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Chasseur',
-        team: 'Village',
-        description: 'lorsqu\'il meurt, peut tuer quelqu\'un avec lui',
-        lore: 'Même dans la mort, le Chasseur ne part pas sans emporter quelqu\'un avec lui.',
-        image_url: '/images/chasseur.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Cupidon',
-        team: 'Village',
-        description: 'la première nuit, il désigne deux joueurs qui seront amoureux',
-        lore: 'Ses flèches créent un lien indéfectible : si l\'un des amoureux meurt, l\'autre meurt de chagrin.',
-        image_url: '/images/cupidon.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "first_night_only"
-      },
-      {
-        name: 'Sorcière',
-        team: 'Village',
-        description: 'possède des potions de vie et de mort',
-        lore: 'Experte en potions, elle peut sauver une victime des Loups-Garous ou éliminer un joueur de son choix.',
-        image_url: '/images/sorciere.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Petite fille',
-        team: 'Village',
-        description: 'peut tenter d\'épier les loups pendant qu\'ils choisissent une victime',
-        lore: 'Curieuse et intrépide, elle risque sa vie pour obtenir des informations précieuses.',
-        image_url: '/images/petite-fille.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-
-      // Extensions
-      {
-        name: 'Salvateur',
-        team: 'Village',
-        description: 'choisit une personne chaque nuit qui sera protégé de la mort',
-        lore: 'Protecteur du village, il peut empêcher la mort d\'un villageois chaque nuit.',
-        image_url: '/images/salvateur.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Idiot du village',
-        team: 'Village',
-        description: 's\'il est tué par le vote du village, il est épargné mais perd le droit de vote',
-        lore: 'Sa naïveté le protège parfois des accusations du village, mais lui fait perdre sa crédibilité.',
-        image_url: '/images/idiot-du-village.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Bouc émissaire',
-        team: 'Village',
-        description: 's\'il y a égalité dans un vote du village, c\'est lui est tué à la place',
-        lore: 'Malchanceux, il est toujours celui qu\'on accuse en cas de doute.',
-        image_url: '/images/bouc-emissaire.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Ancien',
-        team: 'Village',
-        description: 's\'il est tué durant le vote du village, tous les joueurs sauf loup-garou perdent leur pouvoir',
-        lore: 'Respecté pour sa sagesse, sa mort injuste provoque la perte de foi des villageois.',
-        image_url: '/images/ancien.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Joueur de flûte',
-        team: 'Seul',
-        description: 'chaque nuit, enchante une personne, il gagne lorsque tout le village est enchanté',
-        lore: 'Son objectif est de charmer tous les joueurs encore en vie pour gagner la partie.',
-        image_url: '/images/joueur-de-flute.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Loup-garou blanc',
-        team: 'Seul',
-        description: 'une nuit sur deux, tue un joueur',
-        lore: 'Solitaire et traître, il joue un double jeu pour être le dernier survivant.',
-        image_url: '/images/loup-garou-blanc.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "1/2"
-      },
-      {
-        name: 'Corbeau',
-        team: 'Village',
-        description: 'chaque nuit, il désigne un joueur qui aura deux plus contre lui lors du vote du village',
-        lore: 'Son croassement sinistre attire l\'attention du village sur sa cible.',
-        image_url: '/images/corbeau.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Enfant sauvage',
-        team: 'Village',
-        description: 'choisit un joueur modèle en début de partie, si celui-ci est tué par un loup, il devient un loup',
-        lore: 'Élevé par les loups, il reste fidèle à son modèle humain, mais peut retourner à ses instincts sauvages.',
-        image_url: '/images/enfant-sauvage.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "first_night_only"
-      },
-      {
-        name: 'Renard',
-        team: 'Village',
-        description: 'chaque nuit, il choisit 3 joueurs, si l\'un d\'entre eux est loup, il garde son pouvoir',
-        lore: 'Rusé et perspicace, il peut flairer la présence des loups-garous.',
-        image_url: '/images/renard.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Servante dévouée',
-        team: 'Village',
-        description: 'lorsqu\'un joueur est mort, avant que son rôle soit révélé, elle peut échanger son rôle avec avec lui',
-        lore: 'Loyale jusqu\'au bout, elle est prête à prendre la place d\'un autre pour le bien du village.',
-        image_url: '/images/servante-devouee.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Trois frères',
-        team: 'Village',
-        description: 'peuvent se réveiller et communiquer sans parler',
-        lore: 'Liés par le sang, ils s\'entraident pour démasquer les Loups-Garous.',
-        image_url: '/images/trois-freres.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Deux soeurs',
-        team: 'Village',
-        description: 'peuvent se réveiller et communiquer sans parler',
-        lore: 'Unies par un lien indéfectible, elles partagent leurs secrets et intuitions.',
-        image_url: '/images/deux-soeurs.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Montreur d\'ours',
-        team: 'Village',
-        description: 'si son ours grogne le matin, alors l\'un des joueurs à côté de lui est un loup',
-        lore: 'Son ours peut sentir la présence des loups-garous parmi les voisins de son maître.',
-        image_url: '/images/montreur-ours.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Comédien',
-        team: 'Village',
-        description: 'pendant les trois premières nuits, il change de rôle',
-        lore: 'Maître du déguisement, il peut imiter les pouvoirs des autres pour aider le village.',
-        image_url: '/images/comedien.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: "1/3"
-      },
-      {
-        name: 'Chevalier à l\'épée rouillée',
-        team: 'Village',
-        description: 's\'il est tué par les loups, ils ne font pas de victime la nuit suivante, et le premier loup à sa droite meurt',
-        lore: 'Son épée rouillée mais redoutable peut blesser mortellement un loup-garou lors de sa dernière bataille.',
-        image_url: '/images/chevalier-epee.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Juge bègue',
-        team: 'Village',
-        description: 'peut une fois, grâce à signe dicret convenu à l\'avance, choisir d\'effectuer un second vote du village',
-        lore: 'Malgré son bégaiement, il peut ordonner un second vote quand il sent une injustice.',
-        image_url: '/images/juge-begue.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Ange déchu',
-        team: 'Seul',
-        description: 'gagne s\'il meurt la première nuit ou le premier jour, la partie s\'arrête',
-        lore: 'Être céleste dont la mission est de protéger le village, mais qui peut aussi chercher le martyre.',
-        image_url: '/images/ange-dechu.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Abominable sectaire',
-        team: 'Seul',
-        description: 'divise le groupe en deux selon un critère, gagne lorsque les joueurs de l\'autre groupe que le sien sont morts',
-        lore: 'Fanatique et déterminé, il traque les Loups-Garous avec une ferveur religieuse.',
-        image_url: '/images/abominable-sectaire.png',
-        is_custom: 0,
-        wakes_up_at_night: 0,
-        wakes_up_every_night: 0,
-        wake_up_frequency: null
-      },
-      {
-        name: 'Infect père des loups',
-        team: 'Seul',
-        description: 'une fois dans la partie, peut convertir la victime des loups en loup',
-        lore: 'Son pouvoir ancestral lui permet de transformer un humain en loup-garou.',
-        image_url: '/images/infect-pere-loups.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "1/3"
-      },
-      {
-        name: 'Chien-loup',
-        team: 'Village',
-        description: 'en début de partie, peut choisir entre villageois ou loup',
-        lore: 'Déchiré entre deux natures, il doit choisir son camp au début de la partie.',
-        image_url: '/images/chien-loup.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 0,
-        wake_up_frequency: "first_night_only"
-      },
-      {
-        name: 'Grand méchant loup',
-        team: 'Loups',
-        description: 'tant que personne du clan des loups n\'est mort, se réveille seul après les loups pour faire une deuxième victime',
-        lore: 'Le plus redoutable des loups-garous, il peut faire une victime supplémentaire tant que sa meute est intacte.',
-        image_url: '/images/grand-mechant-loup.png',
-        is_custom: 0,
-        wakes_up_at_night: 1,
-        wakes_up_every_night: 1,
-        wake_up_frequency: null
-      }
-    ];
-
-    const insertCard = db.prepare('INSERT INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-
-    // Use our utility function to prepare cards for database
-    for (const card of defaultCards) {
-      const preparedCard = cardUtils.prepareCardForDb(card);
-      insertCard.run(
-        preparedCard.name,
-        preparedCard.team,
-        preparedCard.description,
-        preparedCard.lore,
-        preparedCard.image_url,
-        preparedCard.is_custom,
-        preparedCard.wakes_up_at_night,
-        preparedCard.wakes_up_every_night,
-        preparedCard.wake_up_frequency
-      );
-    }
-
-    res.status(200).json({
-      message: 'Table des cartes réinitialisée avec succès. Les IDs recommencent à 1.',
-      count: defaultCards.length
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la réinitialisation de la table des cartes', error: error.message });
-  }
-});
-
+// Route pour obtenir une carte par ID
 app.get('/api/cards/:id', (req, res) => {
   try {
     const card = db.prepare('SELECT * FROM cards WHERE id = ?').get(req.params.id);
 
     if (!card) {
-      return res.status(404).json({ message: 'Carte non trouvée' });
+      return res.status(404).json({ message: 'Card not found' });
     }
 
-    // Convert SQLite integers to booleans for API
-    const formattedCard = cardUtils.prepareCardForApi(card);
+    // Convert SQLite integer values to booleans for API response
+    const formattedCard = {
+      ...card,
+      is_custom: Boolean(card.is_custom),
+      wakes_up_at_night: Boolean(card.wakes_up_at_night),
+      wakes_up_every_night: Boolean(card.wakes_up_every_night)
+    };
 
     res.json(formattedCard);
   } catch (error) {
@@ -1117,211 +159,173 @@ app.get('/api/cards/:id', (req, res) => {
   }
 });
 
+// Route pour ajouter une nouvelle carte
 app.post('/api/cards', authenticateToken, (req, res) => {
-  const { name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency } = req.body;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
-    // Validate card data before insertion
-    const validation = cardUtils.validateCard({ name, team, description });
-    if (!validation.valid) {
-      return res.status(400).json({ message: validation.error });
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent ajouter des cartes.' });
     }
 
-    // Prepare card data for database
-    const dbCard = cardUtils.prepareCardForDb({
-      name,
-      team,
-      description,
-      lore,
-      image_url,
-      is_custom,
-      wakes_up_at_night,
-      wakes_up_every_night,
-      wake_up_frequency
-    });
+    const { name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency } = req.body;
+
+    // Validation de base
+    if (!name || !team || !description) {
+      return res.status(400).json({ message: 'Les champs name, team et description sont obligatoires' });
+    }
 
     const result = db.prepare('INSERT INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-      dbCard.name,
-      dbCard.team,
-      dbCard.description,
-      dbCard.lore,
-      dbCard.image_url,
-      dbCard.is_custom,
-      dbCard.wakes_up_at_night,
-      dbCard.wakes_up_every_night,
-      dbCard.wake_up_frequency
-    );
-
-    // Convert back to API format
-    const newCard = cardUtils.prepareCardForApi({
-      id: result.lastInsertRowid,
       name,
       team,
       description,
-      lore,
-      image_url,
-      is_custom: dbCard.is_custom,
-      wakes_up_at_night: dbCard.wakes_up_at_night,
-      wakes_up_every_night: dbCard.wakes_up_every_night,
-      wake_up_frequency
-    });
+      lore || null,
+      image_url || null,
+      is_custom ? 1 : 0,
+      wakes_up_at_night ? 1 : 0,
+      wakes_up_every_night ? 1 : 0,
+      wake_up_frequency || null
+    );
 
-    res.status(201).json(newCard);
+    const newCard = db.prepare('SELECT * FROM cards WHERE id = ?').get(result.lastInsertRowid);
+
+    // Convert SQLite integer values to booleans for API response
+    const formattedCard = {
+      ...newCard,
+      is_custom: Boolean(newCard.is_custom),
+      wakes_up_at_night: Boolean(newCard.wakes_up_at_night),
+      wakes_up_every_night: Boolean(newCard.wakes_up_every_night)
+    };
+
+    res.status(201).json(formattedCard);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la création de la carte', error: error.message });
+    console.error('Error adding card:', error);
+    res.status(500).json({ message: 'Error adding card', error: error.message });
   }
 });
 
+// Route pour mettre à jour une carte
 app.put('/api/cards/:id', authenticateToken, (req, res) => {
-  const { name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency } = req.body;
-  const { id } = req.params;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
-    // Validate card data before update
-    const validation = cardUtils.validateCard({ name, team, description });
-    if (!validation.valid) {
-      return res.status(400).json({ message: validation.error });
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent modifier des cartes.' });
     }
 
-    // Prepare card data for database
-    const dbCard = cardUtils.prepareCardForDb({
+    const { name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency } = req.body;
+
+    // Validation de base
+    if (!name || !team || !description) {
+      return res.status(400).json({ message: 'Les champs name, team et description sont obligatoires' });
+    }
+
+    // Vérifier si la carte existe
+    const existingCard = db.prepare('SELECT * FROM cards WHERE id = ?').get(req.params.id);
+    if (!existingCard) {
+      return res.status(404).json({ message: 'Carte non trouvée' });
+    }
+
+    db.prepare('UPDATE cards SET name = ?, team = ?, description = ?, lore = ?, image_url = ?, is_custom = ?, wakes_up_at_night = ?, wakes_up_every_night = ?, wake_up_frequency = ? WHERE id = ?').run(
       name,
       team,
       description,
-      lore,
-      image_url,
-      is_custom,
-      wakes_up_at_night,
-      wakes_up_every_night,
-      wake_up_frequency
-    });
-
-    const result = db.prepare('UPDATE cards SET name = ?, team = ?, description = ?, lore = ?, image_url = ?, is_custom = ?, wakes_up_at_night = ?, wakes_up_every_night = ?, wake_up_frequency = ? WHERE id = ?').run(
-      dbCard.name,
-      dbCard.team,
-      dbCard.description,
-      dbCard.lore,
-      dbCard.image_url,
-      dbCard.is_custom,
-      dbCard.wakes_up_at_night,
-      dbCard.wakes_up_every_night,
-      dbCard.wake_up_frequency,
-      id
+      lore || null,
+      image_url || null,
+      is_custom ? 1 : 0,
+      wakes_up_at_night ? 1 : 0,
+      wakes_up_every_night ? 1 : 0,
+      wake_up_frequency || null,
+      req.params.id
     );
 
-    if (result.changes === 0) {
-      return res.status(404).json({ message: 'Carte non trouvée' });
-    }
+    const updatedCard = db.prepare('SELECT * FROM cards WHERE id = ?').get(req.params.id);
 
-    // Convert back to API format
-    const updatedCard = cardUtils.prepareCardForApi({
-      id,
-      name,
-      team,
-      description,
-      lore,
-      image_url,
-      is_custom: dbCard.is_custom,
-      wakes_up_at_night: dbCard.wakes_up_at_night,
-      wakes_up_every_night: dbCard.wakes_up_every_night,
-      wake_up_frequency
-    });
+    // Convert SQLite integer values to booleans for API response
+    const formattedCard = {
+      ...updatedCard,
+      is_custom: Boolean(updatedCard.is_custom),
+      wakes_up_at_night: Boolean(updatedCard.wakes_up_at_night),
+      wakes_up_every_night: Boolean(updatedCard.wakes_up_every_night)
+    };
 
-    res.json(updatedCard);
+    res.json(formattedCard);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la mise à jour de la carte', error: error.message });
+    console.error('Error updating card:', error);
+    res.status(500).json({ message: 'Error updating card', error: error.message });
   }
 });
 
+// Route pour supprimer une carte
 app.delete('/api/cards/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
-    const result = db.prepare('DELETE FROM cards WHERE id = ?').run(id);
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent supprimer des cartes.' });
+    }
 
-    if (result.changes === 0) {
+    // Vérifier si la carte existe
+    const existingCard = db.prepare('SELECT * FROM cards WHERE id = ?').get(req.params.id);
+    if (!existingCard) {
       return res.status(404).json({ message: 'Carte non trouvée' });
     }
 
-    res.json({ message: 'Carte supprimée avec succès' });
+    db.prepare('DELETE FROM cards WHERE id = ?').run(req.params.id);
+
+    res.json({ message: 'Carte supprimée avec succès', deletedCard: existingCard });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la suppression de la carte', error: error.message });
+    console.error('Error deleting card:', error);
+    res.status(500).json({ message: 'Error deleting card', error: error.message });
   }
 });
 
-// Routes pour les événements du calendrier
-app.get('/api/events', (req, res) => {
-  const events = db.prepare('SELECT * FROM events ORDER BY date').all();
-  res.json(events);
-});
-
-app.post('/api/events', authenticateToken, (req, res) => {
-  const { title, date, description, location } = req.body;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
+// Route pour réinitialiser les cartes
+app.post('/api/reset-cards', authenticateToken, (req, res) => {
   try {
-    const result = db.prepare('INSERT INTO events (title, date, description, location) VALUES (?, ?, ?, ?)').run(title, date, description, location);
-    res.status(201).json({ id: result.lastInsertRowid, title, date, description, location });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la création de l\'événement', error: error.message });
-  }
-});
-
-app.put('/api/events/:id', authenticateToken, (req, res) => {
-  const { title, date, description, location } = req.body;
-  const { id } = req.params;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
-  try {
-    const result = db.prepare('UPDATE events SET title = ?, date = ?, description = ?, location = ? WHERE id = ?').run(title, date, description, location, id);
-
-    if (result.changes === 0) {
-      return res.status(404).json({ message: 'Événement non trouvé' });
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent réinitialiser les cartes.' });
     }
 
-    res.json({ id, title, date, description, location });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'événement', error: error.message });
-  }
-});
+    logger.info('Starting database reset process...');
 
-app.delete('/api/events/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
+    // Begin transaction
+    db.exec('BEGIN TRANSACTION;');
 
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
+    try {
+      // Get all tables
+      const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
 
-  try {
-    const result = db.prepare('DELETE FROM events WHERE id = ?').run(id);
+      // Drop all tables
+      for (const table of tables) {
+        db.exec(`DROP TABLE IF EXISTS ${table.name}`);
+        logger.info(`Dropped table: ${table.name}`);
+      }
 
-    if (result.changes === 0) {
-      return res.status(404).json({ message: 'Événement non trouvé' });
+      // Commit transaction
+      db.exec('COMMIT;');
+
+      // Reinitialize the database with forceReset to ensure clean initialization
+      initializeDatabase(db, {
+        credentials: {
+          username: ADMIN_USERNAME,
+          password: ADMIN_PASSWORD
+        },
+        forceReset: true
+      });
+
+      logger.success('Database reset completed successfully');
+      res.json({ message: 'Cartes réinitialisées avec succès' });
+    } catch (error) {
+      // Rollback transaction on error
+      db.exec('ROLLBACK;');
+      throw error;
     }
-
-    res.json({ message: 'Événement supprimé avec succès' });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la suppression de l\'événement', error: error.message });
+    logger.error('Error resetting cards:', error);
+    res.status(500).json({ message: 'Error resetting cards', error: error.message });
   }
 });
+
+// Events routes removed in favor of Google Calendar integration
 
 // Routes pour les variantes
 app.get('/api/variants', (req, res) => {
@@ -1330,282 +334,390 @@ app.get('/api/variants', (req, res) => {
 });
 
 app.get('/api/variants/:id', (req, res) => {
-  const variant = db.prepare('SELECT * FROM variants WHERE id = ?').get(req.params.id);
+  try {
+    const variant = db.prepare('SELECT * FROM variants WHERE id = ?').get(req.params.id);
 
-  if (!variant) {
-    return res.status(404).json({ message: 'Variante non trouvée' });
+    if (!variant) {
+      return res.status(404).json({ message: 'Variant not found' });
+    }
+
+    // Get variant cards
+    const variantCards = db.prepare('SELECT * FROM variant_cards WHERE variant_id = ?').all(variant.id);
+
+    // Convert SQLite integer values to booleans for API response
+    const formattedVariantCards = variantCards.map(card => ({
+      ...card,
+      wakes_up_at_night: Boolean(card.wakes_up_at_night),
+      wakes_up_every_night: Boolean(card.wakes_up_every_night)
+    }));
+
+    res.json({
+      ...variant,
+      cards: formattedVariantCards
+    });
+  } catch (error) {
+    console.error('Error fetching variant:', error);
+    res.status(500).json({ message: 'Error fetching variant', error: error.message });
   }
-
-  res.json(variant);
 });
 
 app.post('/api/variants', authenticateToken, (req, res) => {
-  const { name, description, lore, image_url } = req.body;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
-    const result = db.prepare('INSERT INTO variants (name, description, lore, image_url) VALUES (?, ?, ?, ?)').run(name, description, lore, image_url);
-    res.status(201).json({ id: result.lastInsertRowid, name, description, lore, image_url });
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent ajouter des variantes.' });
+    }
+
+    const { name, description, lore, image_url } = req.body;
+
+    // Validation de base
+    if (!name || !description) {
+      return res.status(400).json({ message: 'Les champs name et description sont obligatoires' });
+    }
+
+    const result = db.prepare('INSERT INTO variants (name, description, lore, image_url) VALUES (?, ?, ?, ?)').run(
+      name,
+      description,
+      lore || null,
+      image_url || null
+    );
+
+    const newVariant = db.prepare('SELECT * FROM variants WHERE id = ?').get(result.lastInsertRowid);
+
+    res.status(201).json(newVariant);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la création de la variante', error: error.message });
+    console.error('Error adding variant:', error);
+    res.status(500).json({ message: 'Error adding variant', error: error.message });
   }
 });
 
 app.put('/api/variants/:id', authenticateToken, (req, res) => {
-  const { name, description, lore, image_url } = req.body;
-  const { id } = req.params;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
-    const result = db.prepare('UPDATE variants SET name = ?, description = ?, lore = ?, image_url = ? WHERE id = ?').run(name, description, lore, image_url, id);
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent modifier des variantes.' });
+    }
 
-    if (result.changes === 0) {
+    const { name, description, lore, image_url } = req.body;
+
+    // Validation de base
+    if (!name || !description) {
+      return res.status(400).json({ message: 'Les champs name et description sont obligatoires' });
+    }
+
+    // Vérifier si la variante existe
+    const existingVariant = db.prepare('SELECT * FROM variants WHERE id = ?').get(req.params.id);
+    if (!existingVariant) {
       return res.status(404).json({ message: 'Variante non trouvée' });
     }
 
-    res.json({ id, name, description, lore, image_url });
+    db.prepare('UPDATE variants SET name = ?, description = ?, lore = ?, image_url = ? WHERE id = ?').run(
+      name,
+      description,
+      lore || null,
+      image_url || null,
+      req.params.id
+    );
+
+    const updatedVariant = db.prepare('SELECT * FROM variants WHERE id = ?').get(req.params.id);
+
+    res.json(updatedVariant);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la mise à jour de la variante', error: error.message });
+    console.error('Error updating variant:', error);
+    res.status(500).json({ message: 'Error updating variant', error: error.message });
   }
 });
 
 app.delete('/api/variants/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
-    const result = db.prepare('DELETE FROM variants WHERE id = ?').run(id);
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent supprimer des variantes.' });
+    }
 
-    if (result.changes === 0) {
+    // Vérifier si la variante existe
+    const existingVariant = db.prepare('SELECT * FROM variants WHERE id = ?').get(req.params.id);
+    if (!existingVariant) {
       return res.status(404).json({ message: 'Variante non trouvée' });
     }
 
-    res.json({ message: 'Variante supprimée avec succès' });
+    // Supprimer les cartes de la variante
+    db.prepare('DELETE FROM variant_cards WHERE variant_id = ?').run(req.params.id);
+
+    // Supprimer la variante
+    db.prepare('DELETE FROM variants WHERE id = ?').run(req.params.id);
+
+    res.json({ message: 'Variante supprimée avec succès', deletedVariant: existingVariant });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la suppression de la variante', error: error.message });
+    console.error('Error deleting variant:', error);
+    res.status(500).json({ message: 'Error deleting variant', error: error.message });
   }
 });
 
-// Routes pour les cartes de variantes
+// Routes pour les cartes de variante
 app.get('/api/variant-cards', (req, res) => {
-  const variantId = req.query.variant_id;
+  try {
+    const variantCards = db.prepare('SELECT * FROM variant_cards').all();
 
-  let variantCards;
-  if (variantId) {
-    variantCards = db.prepare('SELECT * FROM variant_cards WHERE variant_id = ?').all(variantId);
-  } else {
-    variantCards = db.prepare('SELECT * FROM variant_cards').all();
+    // Convert SQLite integer values to booleans for API response
+    const formattedVariantCards = variantCards.map(card => ({
+      ...card,
+      wakes_up_at_night: Boolean(card.wakes_up_at_night),
+      wakes_up_every_night: Boolean(card.wakes_up_every_night)
+    }));
+
+    res.json(formattedVariantCards);
+  } catch (error) {
+    console.error('Error fetching variant cards:', error);
+    res.status(500).json({ message: 'Error fetching variant cards', error: error.message });
   }
-
-  res.json(variantCards);
 });
 
 app.get('/api/variant-cards/:id', (req, res) => {
-  const variantCard = db.prepare('SELECT * FROM variant_cards WHERE id = ?').get(req.params.id);
+  try {
+    const variantCard = db.prepare('SELECT * FROM variant_cards WHERE id = ?').get(req.params.id);
 
-  if (!variantCard) {
-    return res.status(404).json({ message: 'Carte de variante non trouvée' });
+    if (!variantCard) {
+      return res.status(404).json({ message: 'Variant card not found' });
+    }
+
+    // Convert SQLite integer values to booleans for API response
+    const formattedVariantCard = {
+      ...variantCard,
+      wakes_up_at_night: Boolean(variantCard.wakes_up_at_night),
+      wakes_up_every_night: Boolean(variantCard.wakes_up_every_night)
+    };
+
+    res.json(formattedVariantCard);
+  } catch (error) {
+    console.error('Error fetching variant card:', error);
+    res.status(500).json({ message: 'Error fetching variant card', error: error.message });
   }
-
-  res.json(variantCard);
 });
 
 app.post('/api/variant-cards', authenticateToken, (req, res) => {
-  const { variant_id, name, team, description, lore, image_url, wakes_up_at_night, wakes_up_every_night, wake_up_frequency } = req.body;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent ajouter des cartes de variante.' });
+    }
+
+    const { variant_id, name, team, description, lore, image_url, wakes_up_at_night, wakes_up_every_night, wake_up_frequency } = req.body;
+
+    // Validation de base
+    if (!variant_id || !name || !team || !description) {
+      return res.status(400).json({ message: 'Les champs variant_id, name, team et description sont obligatoires' });
+    }
+
+    // Vérifier si la variante existe
+    const existingVariant = db.prepare('SELECT * FROM variants WHERE id = ?').get(variant_id);
+    if (!existingVariant) {
+      return res.status(404).json({ message: 'Variante non trouvée' });
+    }
+
     const result = db.prepare('INSERT INTO variant_cards (variant_id, name, team, description, lore, image_url, wakes_up_at_night, wakes_up_every_night, wake_up_frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
       variant_id,
       name,
       team,
       description,
-      lore,
-      image_url,
+      lore || null,
+      image_url || null,
       wakes_up_at_night ? 1 : 0,
       wakes_up_every_night ? 1 : 0,
-      wake_up_frequency
+      wake_up_frequency || null
     );
-    res.status(201).json({
-      id: result.lastInsertRowid,
-      variant_id,
-      name,
-      team,
-      description,
-      lore,
-      image_url,
-      wakes_up_at_night,
-      wakes_up_every_night,
-      wake_up_frequency
-    });
+
+    const newVariantCard = db.prepare('SELECT * FROM variant_cards WHERE id = ?').get(result.lastInsertRowid);
+
+    // Convert SQLite integer values to booleans for API response
+    const formattedVariantCard = {
+      ...newVariantCard,
+      wakes_up_at_night: Boolean(newVariantCard.wakes_up_at_night),
+      wakes_up_every_night: Boolean(newVariantCard.wakes_up_every_night)
+    };
+
+    res.status(201).json(formattedVariantCard);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la création de la carte de variante', error: error.message });
+    console.error('Error adding variant card:', error);
+    res.status(500).json({ message: 'Error adding variant card', error: error.message });
   }
 });
 
 app.put('/api/variant-cards/:id', authenticateToken, (req, res) => {
-  const { variant_id, name, team, description, lore, image_url, wakes_up_at_night, wakes_up_every_night, wake_up_frequency } = req.body;
-  const { id } = req.params;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
-    const result = db.prepare('UPDATE variant_cards SET variant_id = ?, name = ?, team = ?, description = ?, lore = ?, image_url = ?, wakes_up_at_night = ?, wakes_up_every_night = ?, wake_up_frequency = ? WHERE id = ?').run(
-      variant_id,
-      name,
-      team,
-      description,
-      lore,
-      image_url,
-      wakes_up_at_night ? 1 : 0,
-      wakes_up_every_night ? 1 : 0,
-      wake_up_frequency,
-      id
-    );
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent modifier des cartes de variante.' });
+    }
 
-    if (result.changes === 0) {
+    const { variant_id, name, team, description, lore, image_url, wakes_up_at_night, wakes_up_every_night, wake_up_frequency } = req.body;
+
+    // Validation de base
+    if (!variant_id || !name || !team || !description) {
+      return res.status(400).json({ message: 'Les champs variant_id, name, team et description sont obligatoires' });
+    }
+
+    // Vérifier si la carte de variante existe
+    const existingVariantCard = db.prepare('SELECT * FROM variant_cards WHERE id = ?').get(req.params.id);
+    if (!existingVariantCard) {
       return res.status(404).json({ message: 'Carte de variante non trouvée' });
     }
 
-    res.json({
-      id,
+    // Vérifier si la variante existe
+    const existingVariant = db.prepare('SELECT * FROM variants WHERE id = ?').get(variant_id);
+    if (!existingVariant) {
+      return res.status(404).json({ message: 'Variante non trouvée' });
+    }
+
+    db.prepare('UPDATE variant_cards SET variant_id = ?, name = ?, team = ?, description = ?, lore = ?, image_url = ?, wakes_up_at_night = ?, wakes_up_every_night = ?, wake_up_frequency = ? WHERE id = ?').run(
       variant_id,
       name,
       team,
       description,
-      lore,
-      image_url,
-      wakes_up_at_night,
-      wakes_up_every_night,
-      wake_up_frequency
-    });
+      lore || null,
+      image_url || null,
+      wakes_up_at_night ? 1 : 0,
+      wakes_up_every_night ? 1 : 0,
+      wake_up_frequency || null,
+      req.params.id
+    );
+
+    const updatedVariantCard = db.prepare('SELECT * FROM variant_cards WHERE id = ?').get(req.params.id);
+
+    // Convert SQLite integer values to booleans for API response
+    const formattedVariantCard = {
+      ...updatedVariantCard,
+      wakes_up_at_night: Boolean(updatedVariantCard.wakes_up_at_night),
+      wakes_up_every_night: Boolean(updatedVariantCard.wakes_up_every_night)
+    };
+
+    res.json(formattedVariantCard);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la mise à jour de la carte de variante', error: error.message });
+    console.error('Error updating variant card:', error);
+    res.status(500).json({ message: 'Error updating variant card', error: error.message });
   }
 });
 
 app.delete('/api/variant-cards/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-
-  if (!req.user.is_admin) {
-    return res.status(403).json({ message: 'Accès refusé. Droits d\'administrateur requis.' });
-  }
-
   try {
-    const result = db.prepare('DELETE FROM variant_cards WHERE id = ?').run(id);
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent supprimer des cartes de variante.' });
+    }
 
-    if (result.changes === 0) {
+    // Vérifier si la carte de variante existe
+    const existingVariantCard = db.prepare('SELECT * FROM variant_cards WHERE id = ?').get(req.params.id);
+    if (!existingVariantCard) {
       return res.status(404).json({ message: 'Carte de variante non trouvée' });
     }
 
-    res.json({ message: 'Carte de variante supprimée avec succès' });
+    db.prepare('DELETE FROM variant_cards WHERE id = ?').run(req.params.id);
+
+    res.json({ message: 'Carte de variante supprimée avec succès', deletedVariantCard: existingVariantCard });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la suppression de la carte de variante', error: error.message });
+    console.error('Error deleting variant card:', error);
+    res.status(500).json({ message: 'Error deleting variant card', error: error.message });
   }
 });
 
-// Routes pour l'ordre de réveil des rôles
-app.get('/api/wake-up-order/:variantId', (req, res) => {
-  const { variantId } = req.params;
-  const includeBase = req.query.includeBase === 'true';
-
-  console.log(`Fetching wake-up order for variant: ${variantId}, includeBase: ${includeBase}`);
-
+// Routes pour l'ordre de réveil
+app.get('/api/wake-up-order', (req, res) => {
   try {
-    // Rechercher l'ordre de réveil pour cette variante et cette configuration
-    const wakeUpOrder = db.prepare('SELECT * FROM wake_up_order WHERE variant_id = ? AND include_base = ?').get(
-      variantId,
-      includeBase ? 1 : 0
-    );
-
-    if (wakeUpOrder) {
-      // Convertir la chaîne JSON en objet
-      const orderData = JSON.parse(wakeUpOrder.order_data);
-      console.log('Found wake-up order:', orderData);
-
-      // Sort the order data by the order field
-      const sortedOrderData = [...orderData].sort((a, b) => a.order - b.order);
-      console.log('Sorted wake-up order:', sortedOrderData);
-
-      res.json({ order: sortedOrderData });
-    } else {
-      // Aucun ordre trouvé
-      console.log('No wake-up order found');
-      res.json({ order: [] });
-    }
+    const wakeUpOrders = db.prepare('SELECT * FROM wake_up_order').all();
+    res.json(wakeUpOrders);
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'ordre de réveil:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération de l\'ordre de réveil', error: error.message });
+    console.error('Error fetching wake-up orders:', error);
+    res.status(500).json({ message: 'Error fetching wake-up orders', error: error.message });
   }
 });
 
-app.post('/api/wake-up-order', (req, res) => {
-  const { variant_id, include_base, order } = req.body;
-
+app.get('/api/wake-up-order/:variant_id', (req, res) => {
   try {
-    // Validate the order data
-    if (!Array.isArray(order)) {
-      return res.status(400).json({ message: 'L\'ordre doit être un tableau' });
+    console.log(`Fetching wake-up order for variant: ${req.params.variant_id}, includeBase: ${req.query.includeBase}`);
+
+    const wakeUpOrder = db.prepare('SELECT * FROM wake_up_order WHERE variant_id = ?').get(req.params.variant_id);
+
+    if (!wakeUpOrder) {
+      console.log(`No wake-up order found for variant: ${req.params.variant_id}`);
+      return res.status(404).json({ message: 'Wake-up order not found for this variant' });
     }
 
-    // Ensure we only store the essential data (id, name, order)
-    const simplifiedOrder = order.map(item => ({
-      id: item.id,
-      name: item.name,
-      order: item.order
-    }));
+    // Parse the order_data JSON string
+    try {
+      wakeUpOrder.order_data = JSON.parse(wakeUpOrder.order_data);
+      console.log(`Successfully parsed order_data for variant: ${req.params.variant_id}`);
 
-    console.log('Saving wake-up order:', {
-      variant_id,
-      include_base: include_base ? 1 : 0,
-      order: simplifiedOrder
-    });
+      // For backward compatibility, also provide the data as 'order'
+      wakeUpOrder.order = wakeUpOrder.order_data;
 
-    // Vérifier si un ordre existe déjà pour cette variante et cette configuration
-    const existingOrder = db.prepare('SELECT id FROM wake_up_order WHERE variant_id = ? AND include_base = ?').get(
-      variant_id,
-      include_base ? 1 : 0
-    );
+      res.json(wakeUpOrder);
+    } catch (parseError) {
+      console.error(`Error parsing order_data for variant ${req.params.variant_id}:`, parseError);
+      res.status(500).json({ message: 'Error parsing wake-up order data', error: parseError.message });
+    }
+  } catch (error) {
+    console.error('Error fetching wake-up order:', error);
+    res.status(500).json({ message: 'Error fetching wake-up order', error: error.message });
+  }
+});
+
+app.post('/api/wake-up-order', authenticateToken, (req, res) => {
+  try {
+    // Vérifier si l'utilisateur est admin
+    if (!req.user.is_admin) {
+      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent ajouter des ordres de réveil.' });
+    }
+
+    const { variant_id, include_base, order_data } = req.body;
+
+    // Validation de base
+    if (!variant_id || order_data === undefined) {
+      return res.status(400).json({ message: 'Les champs variant_id et order_data sont obligatoires' });
+    }
+
+    // Vérifier si un ordre de réveil existe déjà pour cette variante
+    const existingOrder = db.prepare('SELECT * FROM wake_up_order WHERE variant_id = ?').get(variant_id);
 
     if (existingOrder) {
       // Mettre à jour l'ordre existant
-      db.prepare('UPDATE wake_up_order SET order_data = ? WHERE id = ?').run(
-        JSON.stringify(simplifiedOrder),
-        existingOrder.id
-      );
-      console.log(`Updated wake-up order with ID ${existingOrder.id}`);
-    } else {
-      // Créer un nouvel ordre
-      const result = db.prepare('INSERT INTO wake_up_order (variant_id, include_base, order_data) VALUES (?, ?, ?)').run(
-        variant_id,
+      db.prepare('UPDATE wake_up_order SET include_base = ?, order_data = ? WHERE variant_id = ?').run(
         include_base ? 1 : 0,
-        JSON.stringify(simplifiedOrder)
+        JSON.stringify(order_data),
+        variant_id
       );
-      console.log(`Created new wake-up order with ID ${result.lastInsertRowid}`);
+
+      const updatedOrder = db.prepare('SELECT * FROM wake_up_order WHERE variant_id = ?').get(variant_id);
+      updatedOrder.order_data = JSON.parse(updatedOrder.order_data);
+
+      return res.json(updatedOrder);
     }
 
-    res.json({ message: 'Ordre de réveil sauvegardé avec succès' });
+    // Créer un nouvel ordre
+    const result = db.prepare('INSERT INTO wake_up_order (variant_id, include_base, order_data) VALUES (?, ?, ?)').run(
+      variant_id,
+      include_base ? 1 : 0,
+      JSON.stringify(order_data)
+    );
+
+    const newOrder = db.prepare('SELECT * FROM wake_up_order WHERE id = ?').get(result.lastInsertRowid);
+    newOrder.order_data = JSON.parse(newOrder.order_data);
+
+    res.status(201).json(newOrder);
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde de l\'ordre de réveil:', error);
-    res.status(500).json({ message: 'Erreur lors de la sauvegarde de l\'ordre de réveil', error: error.message });
+    console.error('Error adding wake-up order:', error);
+    res.status(500).json({ message: 'Error adding wake-up order', error: error.message });
   }
+});
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Catch-all route to serve the React app
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Démarrer le serveur
 app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+  logger.success(`Server running on port ${PORT}`);
 });

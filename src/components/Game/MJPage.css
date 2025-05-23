@@ -617,6 +617,12 @@
   border: 1px solid var(--input-border);
 }
 
+.mj-player-card-select select option:disabled {
+  color: #999;
+  font-style: italic;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
 .mj-player-card-info {
   margin-top: 0.5rem;
   display: flex;

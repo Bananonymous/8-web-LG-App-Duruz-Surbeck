@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AdminPanel.css';
-import WakeUpOrderConfig from './WakeUpOrderConfig';
+import { WakeUpOrderConfig } from '../Game';
 import AdminResetCards from './AdminResetCards';
 import AdminLogin from './AdminLogin';
 

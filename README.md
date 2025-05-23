@@ -1,6 +1,6 @@
 # Loups-Garous de Thiercelieux - Application Web
 
-Une application web complète pour gérer et jouer aux Loups-Garous de Thiercelieux, incluant un catalogue de cartes, un gestionnaire de partie, un calendrier d'événements et un système d'administration.
+Une application web complète pour gérer et jouer aux Loups-Garous de Thiercelieux, incluant un catalogue de cartes, un gestionnaire de partie, un calendrier intégré avec Google Calendar et un système d'administration.
 
 ## Fonctionnalités
 
@@ -29,13 +29,14 @@ Une application web complète pour gérer et jouer aux Loups-Garous de Thierceli
 - Configuration de l'ordre de réveil des rôles pour chaque variante
 
 ### Calendrier d'Événements
-- Affichage des événements à venir
-- Détails sur chaque événement (date, lieu, description)
-- Interface pour s'inscrire aux événements
+- Intégration avec Google Calendar pour afficher les événements
+- Interface interactive avec vue mensuelle, hebdomadaire et quotidienne
+- Connexion avec votre compte Google pour synchroniser vos événements
+- Affichage des détails complets des événements (date, lieu, description)
 
 ### Panneau d'Administration
 - Gestion complète des cartes (ajout, modification, suppression)
-- Gestion des événements du calendrier
+- Configuration des paramètres de l'application
 - Gestion des variantes et de leurs cartes spécifiques
 - Configuration de l'ordre de réveil des rôles
 - Réinitialisation de la base de données
@@ -71,7 +72,6 @@ Une application web complète pour gérer et jouer aux Loups-Garous de Thierceli
 - **cards**: Cartes du jeu de base
 - **variant_cards**: Cartes spécifiques aux variantes
 - **variants**: Différentes variantes du jeu
-- **events**: Événements du calendrier
 - **users**: Utilisateurs administrateurs
 - **wake_up_order**: Configuration de l'ordre de réveil des rôles
 
@@ -127,7 +127,10 @@ L'application expose une API REST complète:
 - **POST /api/cards**: Ajoute une nouvelle carte (admin)
 - **PUT /api/cards/:id**: Modifie une carte existante (admin)
 - **DELETE /api/cards/:id**: Supprime une carte (admin)
-- **GET /api/events**: Liste tous les événements
+- **GET /api/google-calendar/events**: Liste les événements Google Calendar
+- **GET /api/google-calendar/auth-url**: Obtient l'URL d'authentification Google
+- **POST /api/google-calendar/auth-callback**: Gère le callback d'authentification Google
+- **POST /api/google-calendar/refresh-token**: Rafraîchit le token d'accès Google
 - **GET /api/variants**: Liste toutes les variantes
 - **GET /api/variant-cards**: Liste les cartes d'une variante
 - **POST /api/reset-cards**: Réinitialise la base de données (admin)

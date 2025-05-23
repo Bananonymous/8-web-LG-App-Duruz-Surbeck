@@ -9,6 +9,7 @@ const Sorciere = lazy(() => import('./village/Sorciere'));
 const Salvateur = lazy(() => import('./village/Salvateur'));
 const Ancien = lazy(() => import('./village/Ancien'));
 const Chevalier = lazy(() => import('./village/Chevalier'));
+const Comedien = lazy(() => import('./village/Comedien'));
 const Werewolf = lazy(() => import('./werewolf/Werewolf'));
 
 // Map of role names to their components
@@ -18,9 +19,32 @@ const roleComponentMap = {
   'Salvateur': Salvateur,
   'Ancien': Ancien,
   'Chevalier à l\'épée rouillée': Chevalier,
+  'Comédien': Comedien,
   'Loup-Garou': Werewolf,
   'Infect père des loups': Werewolf, // Use the same component as regular werewolves
   // Add more roles here as they are implemented
+};
+
+// Helper function to check if a player is infected
+const isPlayerInfected = (player) => {
+  if (!player) return false;
+
+  // Check name for (Infecté) marker
+  if (typeof player === 'string') {
+    return player.includes('(Infecté)');
+  }
+
+  // Check player name
+  if (player.name) {
+    return player.name.includes('(Infecté)');
+  }
+
+  // Check playerName
+  if (player.playerName) {
+    return player.playerName.includes('(Infecté)');
+  }
+
+  return false;
 };
 
 /**
@@ -28,7 +52,12 @@ const roleComponentMap = {
  * Dynamically renders the appropriate role component based on the role name
  */
 const RoleFactory = (props) => {
-  const { role } = props;
+  const { role, player } = props;
+
+  // Check if this player is infected
+  const infected = isPlayerInfected(player) ||
+    isPlayerInfected(props.playerName) ||
+    (role && isPlayerInfected(role));
 
   // Handle the case where role is directly a card object (happens with Infect père des loups)
   if (role && !role.card && role.name === 'Infect père des loups') {
@@ -50,7 +79,7 @@ const RoleFactory = (props) => {
   }
 
   // Handle the case where role is an object with id, name, team, etc. but no card property
-  if (role && !role.card && role.id && role.name && role.team === 'Loups-Garous') {
+  if (role && !role.card && role.id && role.name && role.team === 'Loups-Garous' && !infected) {
     // Create a proper role object without logging
     const fixedProps = {
       ...props,
@@ -98,11 +127,27 @@ const RoleFactory = (props) => {
         }
       };
 
-      // If it's a werewolf team role, use the Werewolf component
-      if (role.team === 'Loups-Garous' || role.name === 'Infect père des loups' || role.name === 'Loup-Garou') {
+      // If it's an actual werewolf role (not just infected), use the Werewolf component
+      if (!infected && ((role.team === 'Loups-Garous' && (role.name === 'Loup-Garou' || role.name === 'Infect père des loups')) ||
+        role.name === 'Infect père des loups' ||
+        role.name === 'Loup-Garou')) {
         return (
           <Suspense fallback={<div>Chargement du rôle...</div>}>
             <Werewolf {...fixedProps} />
+          </Suspense>
+        );
+      }
+
+      // If it's an infected player, we need to use their original role component
+      if (infected) {
+        // Extract the original role name from the player name if possible
+        let originalRoleName = role.name;
+
+        // For infected players, try to find the appropriate component based on their original role
+        const RoleComponent = roleComponentMap[originalRoleName] || BaseRole;
+        return (
+          <Suspense fallback={<div>Chargement du rôle...</div>}>
+            <RoleComponent {...fixedProps} />
           </Suspense>
         );
       }
@@ -127,12 +172,18 @@ const RoleFactory = (props) => {
   // Get the appropriate component for this role
   let RoleComponent;
 
-  // Special handling for werewolf roles
-  if (role.card.team === 'Loups-Garous' || role.card.name === 'Infect père des loups') {
-    // All werewolf team members use the Werewolf component
+  // Special handling for werewolf roles vs infected players
+  if (infected) {
+    // CRITICAL FIX: For infected players, ALWAYS use the component mapped to their original role name
+    // This ensures infected players keep their original role interface
+    console.log("Using original role component for infected player:", role.card.name);
+    RoleComponent = roleComponentMap[role.card.name] || BaseRole;
+  } else if ((role.card.team === 'Loups-Garous' && (role.card.name === 'Loup-Garou' || role.card.name === 'Infect père des loups')) ||
+    role.card.name === 'Infect père des loups') {
+    // Only actual werewolf roles use the Werewolf component
     RoleComponent = Werewolf;
   } else {
-    // For all other roles, use the component mapped to their name
+    // For all other roles, use the component mapped to their original role name
     RoleComponent = roleComponentMap[role.card.name] || BaseRole;
   }
 

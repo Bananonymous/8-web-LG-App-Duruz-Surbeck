@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import ThemeToggle from './ThemeToggle';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import NavDropdown from './NavDropdown';
 import axios from 'axios';
 
@@ -71,7 +70,6 @@ const Navbar = () => {
           ) : (
             <Link to="/login" className={isActive('/login')}>Connexion</Link>
           )}
-          <ThemeToggle />
         </div>
       </div>
     </nav>

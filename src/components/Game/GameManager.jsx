@@ -6,14 +6,14 @@ import './PlayerManagement.css';
 import './NightPhase.css';
 import './ExecutionPhase.css';
 import './GameManager.css';
-import '../styles/DesignSystem.css';
-import RoleFactory from '../roles/RoleFactory';
-import { shouldRoleWakeUp } from '../roles';
+import '../../styles/DesignSystem.css';
+import RoleFactory from '../../roles/RoleFactory';
+import { shouldRoleWakeUp } from '../../roles';
 import Timer from './Timer';
 
 const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
     // Game state
-    const [gamePhase, setGamePhase] = useState('night'); // night, morning, discussion, execution
+    const [gamePhase, setGamePhase] = useState('night'); // night, morning, discussion, execution, gameOver
     const [currentNight, setCurrentNight] = useState(1);
     const [gameTime, setGameTime] = useState(0); // in seconds
     const [victims, setVictims] = useState([]);
@@ -24,6 +24,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
     const [timerDuration, setTimerDuration] = useState(300); // 5 minutes default
     const [nightVictim, setNightVictim] = useState(null);
     const [callDeadRoles, setCallDeadRoles] = useState(false);
+    const [winningTeam, setWinningTeam] = useState(null); // To track which team won
 
     // Special role states
     const [witchSaveUsed, setWitchSaveUsed] = useState(false);
@@ -328,6 +329,8 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
             // For other variants, it depends on whether we want to include base cards
             const includeBase = variantId === 'base' ? true : true; // Always true for now
 
+            console.log(`Fetching wake-up order for variant: ${variantId}, includeBase: ${includeBase}`);
+
             // Try all possible combinations to ensure we get the wake-up order
             let response;
             let data;
@@ -335,29 +338,78 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
             // First try with the specified parameters
             response = await fetch(`http://localhost:5000/api/wake-up-order/${variantId}?includeBase=${includeBase}`);
             data = await response.json();
+            console.log('Initial wake-up order response:', data);
 
-            if (!(data && data.order && data.order.length > 0)) {
+            if (!(data && data.order_data && data.order_data.length > 0)) {
+                console.log('No order_data found in initial response, trying with includeBase=true');
                 // If not found, try with includeBase=true (which is most likely to have data)
                 response = await fetch(`http://localhost:5000/api/wake-up-order/${variantId}?includeBase=true`);
                 data = await response.json();
+                console.log('Second attempt response:', data);
 
-                if (!(data && data.order && data.order.length > 0)) {
+                if (!(data && data.order_data && data.order_data.length > 0)) {
+                    console.log('Still no order_data, trying base variant as last resort');
                     // Last resort: try to get any wake-up order from the database
                     response = await fetch(`http://localhost:5000/api/wake-up-order/base?includeBase=true`);
                     data = await response.json();
+                    console.log('Last resort response:', data);
                 }
             }
 
-            if (data && data.order && data.order.length > 0) {
+            // Check if we have valid order data
+            if (data && data.order_data && data.order_data.length > 0) {
+                // Handle the response format - order_data is the correct field name
+                const orderData = data.order_data;
+
+                if (orderData && orderData.length > 0) {
+                    console.log('Found wake-up order in database:', orderData);
+
+                    // Store the complete order data for reference
+                    adminPanelOrder = [...orderData];
+
+                    // Create the order map from the fetched data
+                    // Normalize role names to handle case sensitivity and special characters
+                    orderData.forEach(item => {
+                        if (item.name) {
+                            // Store both the original name and a normalized version
+                            orderMap[item.name] = parseInt(item.order, 10);
+                            // Also store a normalized version (lowercase, no accents)
+                            const normalizedName = item.name
+                                .toLowerCase()
+                                .normalize("NFD")
+                                .replace(/[\u0300-\u036f]/g, "");
+                            orderMap[normalizedName] = parseInt(item.order, 10);
+                        }
+                    });
+
+                    console.log('Created order map:', orderMap);
+                } else {
+                    console.warn('Wake-up order data is empty, using default order');
+                    throw new Error('Empty wake-up order data');
+                }
+            } else if (data && data.order && data.order.length > 0) {
+                // Fallback to 'order' field if 'order_data' is not available
+                console.log('Using order field instead of order_data:', data.order);
+
                 // Store the complete order data for reference
                 adminPanelOrder = [...data.order];
 
-                // Create a map of role names to their order number (from the admin panel)
+                // Create the order map from the fetched data
                 data.order.forEach(item => {
-                    // Store the order number for each role name
+                    // Store both the original name and a normalized version
                     orderMap[item.name] = parseInt(item.order, 10);
+                    // Also store a normalized version (lowercase, no accents)
+                    const normalizedName = item.name
+                        .toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "");
+                    orderMap[normalizedName] = parseInt(item.order, 10);
                 });
+
+                console.log('Created order map from order field:', orderMap);
             } else {
+                console.warn('No wake-up order found in database, using default order');
+
                 // Create a default order based on traditional Werewolf rules
                 const defaultOrder = [
                     { name: 'Loup-Garou', order: 1 },
@@ -375,8 +427,16 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
 
                 // Create the order map from the default order
                 defaultOrder.forEach(item => {
-                    orderMap[item.name] = item.order;
+                    orderMap[item.name] = parseInt(item.order, 10);
+                    // Also store a normalized version (lowercase, no accents)
+                    const normalizedName = item.name
+                        .toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "");
+                    orderMap[normalizedName] = parseInt(item.order, 10);
                 });
+
+                console.log('Created default order map:', orderMap);
             }
         } catch (error) {
             console.error('Error fetching wake-up order:', error);
@@ -393,12 +453,22 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                 { name: 'Cupidon', order: 9 }
             ];
 
+            // Store the complete order data for reference
             adminPanelOrder = defaultOrder;
 
             // Create the order map from the default order
             defaultOrder.forEach(item => {
-                orderMap[item.name] = item.order;
+                // Store both the original name and a normalized version
+                orderMap[item.name] = parseInt(item.order, 10);
+                // Also store a normalized version (lowercase, no accents)
+                const normalizedName = item.name
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "");
+                orderMap[normalizedName] = parseInt(item.order, 10);
             });
+
+            console.log('Created default order map due to error:', orderMap);
         }
 
         // Get all eligible players with their roles
@@ -408,13 +478,26 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                 // Use our helper function to determine if the role should wake up
                 return shouldRoleWakeUp(card, currentNight);
             })
-            .map(player => ({
-                playerId: player.id,
-                playerName: player.name,
-                card: player.card,
-                // Assign order number from the admin panel configuration
-                orderNumber: orderMap[player.card.name] || 999 // Default to high number if not found
-            }));
+            .map(player => {
+                // Try to find the order number using different name formats
+                const cardName = player.card.name;
+                const normalizedName = cardName
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "");
+
+                // Log the role and its order lookup
+                const orderNumber = orderMap[cardName] || orderMap[normalizedName] || 999;
+                console.log(`Role: ${cardName}, Normalized: ${normalizedName}, Order: ${orderNumber}`);
+
+                return {
+                    playerId: player.id,
+                    playerName: player.name,
+                    card: player.card,
+                    // Assign order number from the admin panel configuration
+                    orderNumber: orderNumber // Try both original and normalized name
+                };
+            });
 
         // Group by role name to avoid calling the same role multiple times
         // Special handling for werewolf roles - group all werewolf roles together
@@ -440,20 +523,29 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                     roleGroups[groupName] = [];
                 }
                 roleGroups[groupName].push(role);
-            } else if (isInfected) {
-                // Group infected players under their original role name
-                const roleName = role.card.name;
-                if (!roleGroups[roleName]) {
-                    roleGroups[roleName] = [];
-                }
-                roleGroups[roleName].push(role);
             } else {
-                // Normal grouping for non-werewolf roles
+                // For infected players and normal roles, group by original role name
+                // This ensures infected players keep their original role interface
                 const roleName = role.card.name;
                 if (!roleGroups[roleName]) {
                     roleGroups[roleName] = [];
                 }
                 roleGroups[roleName].push(role);
+
+                // If this is an infected player, also add them to the werewolf group
+                // so they wake up with the werewolves
+                if (isInfected) {
+                    const werewolfGroupName = 'Loup-Garou';
+                    if (!roleGroups[werewolfGroupName]) {
+                        roleGroups[werewolfGroupName] = [];
+                    }
+                    // Add a copy of the role to the werewolf group
+                    roleGroups[werewolfGroupName].push({
+                        ...role,
+                        // Mark this as a duplicate entry for an infected player
+                        isInfectedDuplicate: true
+                    });
+                }
             }
         });
 
@@ -461,9 +553,15 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
         // We'll select a representative player for each role type
         // Important: Preserve the orderNumber from the admin panel
         let roles = Object.entries(roleGroups).map(([roleName, players]) => {
+            // Filter out duplicate entries for infected players from the representative selection
+            const nonDuplicatePlayers = players.filter(player => !player.isInfectedDuplicate);
+
+            // If all players in this group are duplicates (shouldn't happen), use the original list
+            const playersToUse = nonDuplicatePlayers.length > 0 ? nonDuplicatePlayers : players;
+
             // For each role type, find the player with the lowest player ID
             // This ensures consistency in who represents each role
-            const sortedPlayers = [...players].sort((a, b) => a.playerId - b.playerId);
+            const sortedPlayers = [...playersToUse].sort((a, b) => a.playerId - b.playerId);
             const representativePlayer = sortedPlayers[0];
 
             // Get the order number from the admin panel configuration
@@ -474,7 +572,8 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                 orderNumber: orderNumber, // Explicitly set the order number
                 playersWithRole: players.map(r => ({
                     playerId: r.playerId,
-                    playerName: r.playerName
+                    playerName: r.playerName,
+                    isInfectedDuplicate: r.isInfectedDuplicate || false
                 }))
             };
         });
@@ -1044,6 +1143,12 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
         // Save game state before changing phase
         saveGameState();
 
+        // Check if the game is over
+        if (checkGameOver()) {
+            console.log("Game over detected after night phase!");
+            return; // Game is over, don't proceed to morning
+        }
+
         // Move to morning phase
         setGamePhase('morning');
     };
@@ -1073,8 +1178,8 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
         return cupidonLovers.includes(playerId);
     };
 
-    // Check if game is over
-    const isGameOver = () => {
+    // Check if game is over and determine the winning team
+    const checkGameOver = () => {
         const alivePlayers = getAlivePlayers();
 
         // Check for different teams
@@ -1106,6 +1211,8 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
 
         // Check if only the lovers are alive (lovers win)
         if (alivePlayers.length === 2 && aliveLovers.length === 2) {
+            setWinningTeam('Amoureux');
+            setGamePhase('gameOver');
             return true; // Lovers win
         }
 
@@ -1116,6 +1223,10 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
         // 4. Only the two lovers remain alive
 
         if (alivePlayers.length === 1 && aliveSolitaires.length === 1) {
+            // Find the specific solitary role that won
+            const solitaryWinner = alivePlayers.find(player => player.card.team === 'Solitaire');
+            setWinningTeam(solitaryWinner.card.name);
+            setGamePhase('gameOver');
             return true; // Solitary role wins
         }
 
@@ -1127,7 +1238,21 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
             return false; // Game continues if White Werewolf is alive
         }
 
-        return aliveWerewolves.length === 0 || aliveVillagers.length === 0;
+        // Check if all werewolves are dead (village wins)
+        if (aliveWerewolves.length === 0) {
+            setWinningTeam('Village');
+            setGamePhase('gameOver');
+            return true;
+        }
+
+        // Check if all villagers are dead (werewolves win)
+        if (aliveVillagers.length === 0) {
+            setWinningTeam('Loups-Garous');
+            setGamePhase('gameOver');
+            return true;
+        }
+
+        return false; // Game continues
     };
 
     // Save game state to localStorage
@@ -1533,6 +1658,51 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
         </div>
     );
 
+    // Render game over screen
+    const renderGameOverPhase = () => (
+        <div className="mj-game-over">
+            <h2>Fin de la partie</h2>
+            <h3>Victoire de l'équipe : {winningTeam}</h3>
+
+            <div className="mj-final-results">
+                <div className="mj-player-status">
+                    <div className="mj-alive-section">
+                        <h4>Joueurs survivants</h4>
+                        <ul>
+                            {getAlivePlayers().map(player => (
+                                <li key={player.id}>
+                                    <strong>{player.name}</strong> ({player.card.name})
+                                    {cupidonLovers.includes(player.id) && <span className="mj-lover-indicator"> ❤️</span>}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div className="mj-dead-section">
+                        <h4>Joueurs morts</h4>
+                        <ul>
+                            {gameConfig.players
+                                .filter(player => victims.includes(player.id) || executed.includes(player.id))
+                                .map(player => (
+                                    <li key={player.id}>
+                                        <strong>{player.name}</strong> ({player.card.name})
+                                        {cupidonLovers.includes(player.id) && <span className="mj-lover-indicator"> ❤️</span>}
+                                    </li>
+                                ))
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mj-game-controls">
+                <button className="mj-btn" onClick={onRestart}>
+                    Nouvelle partie
+                </button>
+            </div>
+        </div>
+    );
+
     // Render execution phase
     const renderExecutionPhase = () => (
         <div className="mj-phase mj-execution-phase">
@@ -1659,6 +1829,12 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                             // Reset execution targets
                             setExecutionTargets([]);
 
+                            // Check if the game is over after executions
+                            if (checkGameOver()) {
+                                console.log("Game over detected after execution phase!");
+                                return; // Game is over, don't proceed
+                            }
+
                             // If hunter can shoot, we'll handle that in the morning phase
                             if (hunterCanShoot) {
                                 setGamePhase('morning');
@@ -1701,181 +1877,192 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
 
     return (
         <div className="mj-game-manager">
-            <div className="mj-game-info">
-                <div className="mj-game-stats">
-                    <div className="mj-stat">
-                        <span className="mj-stat-label">Nuit</span>
-                        <span className="mj-stat-value">{currentNight}</span>
-                    </div>
-                    <div className="mj-stat">
-                        <span className="mj-stat-label">Durée</span>
-                        <span className="mj-stat-value">{formatGameTime(gameTime)}</span>
-                    </div>
-                    <div className="mj-stat">
-                        <span className="mj-stat-label">Joueurs vivants</span>
-                        <span className="mj-stat-value">{getAlivePlayers().length}</span>
-                    </div>
-                </div>
-
-                <div className="mj-game-controls">
-                    <div className="mj-control-buttons">
-                        <button
-                            className="mj-btn"
-                            onClick={() => {
-                                setPlayerFilterTab('all'); // Reset to show all players
-                                setShowRemainingPlayers(true);
-                            }}
-                        >
-                            Gestion des joueurs
-                        </button>
-
-                        <div className="mj-checkbox-group">
-                            <input
-                                type="checkbox"
-                                id="callDeadRoles"
-                                checked={callDeadRoles}
-                                onChange={() => setCallDeadRoles(!callDeadRoles)}
-                            />
-                            <label htmlFor="callDeadRoles">Appeler les rôles morts</label>
+            {gamePhase === 'gameOver' ? (
+                renderGameOverPhase()
+            ) : (
+                <>
+                    <div className="mj-game-info">
+                        <div className="mj-game-stats">
+                            <div className="mj-stat">
+                                <span className="mj-stat-label">Nuit</span>
+                                <span className="mj-stat-value">{currentNight}</span>
+                            </div>
+                            <div className="mj-stat">
+                                <span className="mj-stat-label">Durée</span>
+                                <span className="mj-stat-value">{formatGameTime(gameTime)}</span>
+                            </div>
+                            <div className="mj-stat">
+                                <span className="mj-stat-label">Joueurs vivants</span>
+                                <span className="mj-stat-value">{getAlivePlayers().length}</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <button
-                        className="mj-btn mj-btn-danger"
-                        onClick={onRestart}
-                    >
-                        Terminer la partie
-                    </button>
-                </div>
-            </div>
+                        <div className="mj-game-controls">
+                            <div className="mj-control-buttons">
+                                <button
+                                    className="mj-btn"
+                                    onClick={() => {
+                                        setPlayerFilterTab('all'); // Reset to show all players
+                                        setShowRemainingPlayers(true);
+                                    }}
+                                >
+                                    Gestion des joueurs
+                                </button>
 
-            {gamePhase === 'night' && renderNightPhase()}
-            {gamePhase === 'morning' && renderMorningPhase()}
-            {gamePhase === 'discussion' && renderDiscussionPhase()}
-            {gamePhase === 'execution' && renderExecutionPhase()}
+                                <div className="mj-checkbox-group">
+                                    <input
+                                        type="checkbox"
+                                        id="callDeadRoles"
+                                        checked={callDeadRoles}
+                                        onChange={() => setCallDeadRoles(!callDeadRoles)}
+                                    />
+                                    <label htmlFor="callDeadRoles">Appeler les rôles morts</label>
+                                </div>
+                            </div>
 
-            {/* Player Management Modal */}
-            {showRemainingPlayers && (
-                <div className="mj-modal mj-player-management-modal">
-                    <div className="mj-modal-content">
-                        <div className="mj-modal-header">
-                            <h3>Gestion des joueurs</h3>
                             <button
-                                className="mj-modal-close"
-                                onClick={() => setShowRemainingPlayers(false)}
+                                className="mj-btn mj-btn-danger"
+                                onClick={onRestart}
                             >
-                                ×
+                                Terminer la partie
                             </button>
                         </div>
-                        <div className="mj-modal-body">
-                            <div className="mj-player-status-tabs">
-                                <button
-                                    className={`mj-player-status-tab ${playerFilterTab === 'all' ? 'active' : ''}`}
-                                    onClick={() => setPlayerFilterTab('all')}
-                                >
-                                    Tous les joueurs
-                                    <span className="mj-player-count">{gameConfig.players.length}</span>
-                                </button>
-                                <button
-                                    className={`mj-player-status-tab ${playerFilterTab === 'alive' ? 'active' : ''}`}
-                                    onClick={() => setPlayerFilterTab('alive')}
-                                >
-                                    Joueurs vivants
-                                    <span className="mj-player-count">{getAlivePlayers().length}</span>
-                                </button>
-                                <button
-                                    className={`mj-player-status-tab ${playerFilterTab === 'dead' ? 'active' : ''}`}
-                                    onClick={() => setPlayerFilterTab('dead')}
-                                >
-                                    Joueurs morts
-                                    <span className="mj-player-count">{gameConfig.players.length - getAlivePlayers().length}</span>
-                                </button>
-                            </div>
+                    </div>
 
-                            <div className="mj-players-grid">
-                                {gameConfig.players
-                                    .filter(player => {
-                                        const isAlive = !victims.includes(player.id) && !executed.includes(player.id);
-                                        if (playerFilterTab === 'all') return true;
-                                        if (playerFilterTab === 'alive') return isAlive;
-                                        if (playerFilterTab === 'dead') return !isAlive;
-                                        return true;
-                                    })
-                                    .map(player => {
-                                        const isAlive = !victims.includes(player.id) && !executed.includes(player.id);
-                                        return (
-                                            <div
-                                                key={player.id}
-                                                className={`mj-player-card ${isAlive ? 'alive' : 'dead'}`}
-                                                onClick={() => {
-                                                    // Toggle player status (alive/dead)
-                                                    if (isAlive) {
-                                                        // Kill player
-                                                        if (confirm(`Êtes-vous sûr de vouloir tuer ${player.name} ?`)) {
-                                                            setVictims(prev => [...prev, player.id]);
-                                                        }
-                                                    } else {
-                                                        // Revive player
-                                                        if (confirm(`Êtes-vous sûr de vouloir ressusciter ${player.name} ?`)) {
-                                                            setVictims(prev => prev.filter(id => id !== player.id));
-                                                            setExecuted(prev => prev.filter(id => id !== player.id));
-                                                        }
-                                                    }
-                                                }}
-                                            >
-                                                <div className={`mj-player-status-indicator ${isAlive ? 'alive' : 'dead'}`}>
-                                                    {isAlive ? '✓' : '✗'}
-                                                </div>
-                                                <div className="mj-player-name">
-                                                    {player.name}
-                                                    {cupidonLovers.includes(player.id) && <span className="mj-lover-indicator"> ❤️</span>}
-                                                    {player.name.includes('(Infecté)') && <span style={{ marginLeft: '5px', color: '#dc3545' }}> 🧟</span>}
-                                                </div>
-                                                <div className="mj-player-role">
-                                                    <div className="mj-player-role-name">
-                                                        {player.card.name}
-                                                        {player.name.includes('(Infecté)') &&
-                                                            <span style={{
-                                                                fontSize: '0.8em',
-                                                                color: '#dc3545',
-                                                                marginLeft: '5px',
-                                                                fontStyle: 'italic'
-                                                            }}>
-                                                                (Infecté)
-                                                            </span>
-                                                        }
-                                                    </div>
-                                                    <div className={`mj-player-team ${player.name.includes('(Infecté)') || player.card.team === 'Loups-Garous' ? 'loups-garous' : player.card.team.toLowerCase()}`}>
-                                                        {player.name.includes('(Infecté)') || player.card.team === 'Loups-Garous' ? 'Loups-Garous' : player.card.team}
-                                                    </div>
-                                                </div>
-                                                <div className="mj-player-action-hint"></div>
-                                            </div>
-                                        );
-                                    })}
-                            </div>
+                    {gamePhase === 'night' && renderNightPhase()}
+                    {gamePhase === 'morning' && renderMorningPhase()}
+                    {gamePhase === 'discussion' && renderDiscussionPhase()}
+                    {gamePhase === 'execution' && renderExecutionPhase()}
 
-                            <div className="mj-player-management-footer">
-                                <div className="mj-player-management-stats">
-                                    <div className="mj-player-stat">
-                                        Vivants: <span className="mj-player-stat-value">{getAlivePlayers().length}</span>
-                                    </div>
-                                    <div className="mj-player-stat">
-                                        Morts: <span className="mj-player-stat-value">{gameConfig.players.length - getAlivePlayers().length}</span>
-                                    </div>
-                                </div>
-                                <div className="mj-player-management-actions">
+                    {/* Player Management Modal */}
+                    {showRemainingPlayers && (
+                        <div className="mj-modal mj-player-management-modal">
+                            <div className="mj-modal-content">
+                                <div className="mj-modal-header">
+                                    <h3>Gestion des joueurs</h3>
                                     <button
-                                        className="mj-btn-close"
+                                        className="mj-modal-close"
                                         onClick={() => setShowRemainingPlayers(false)}
                                     >
-                                        Fermer
+                                        ×
                                     </button>
+                                </div>
+                                <div className="mj-modal-body">
+                                    <div className="mj-player-status-tabs">
+                                        <button
+                                            className={`mj-player-status-tab ${playerFilterTab === 'all' ? 'active' : ''}`}
+                                            onClick={() => setPlayerFilterTab('all')}
+                                        >
+                                            Tous les joueurs
+                                            <span className="mj-player-count">{gameConfig.players.length}</span>
+                                        </button>
+                                        <button
+                                            className={`mj-player-status-tab ${playerFilterTab === 'alive' ? 'active' : ''}`}
+                                            onClick={() => setPlayerFilterTab('alive')}
+                                        >
+                                            Joueurs vivants
+                                            <span className="mj-player-count">{getAlivePlayers().length}</span>
+                                        </button>
+                                        <button
+                                            className={`mj-player-status-tab ${playerFilterTab === 'dead' ? 'active' : ''}`}
+                                            onClick={() => setPlayerFilterTab('dead')}
+                                        >
+                                            Joueurs morts
+                                            <span className="mj-player-count">{gameConfig.players.length - getAlivePlayers().length}</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="mj-players-grid">
+                                        {gameConfig.players
+                                            .filter(player => {
+                                                const isAlive = !victims.includes(player.id) && !executed.includes(player.id);
+                                                if (playerFilterTab === 'all') return true;
+                                                if (playerFilterTab === 'alive') return isAlive;
+                                                if (playerFilterTab === 'dead') return !isAlive;
+                                                return true;
+                                            })
+                                            .map(player => {
+                                                const isAlive = !victims.includes(player.id) && !executed.includes(player.id);
+                                                return (
+                                                    <div
+                                                        key={player.id}
+                                                        className={`mj-player-card ${isAlive ? 'alive' : 'dead'}`}
+                                                        onClick={() => {
+                                                            // Toggle player status (alive/dead)
+                                                            if (isAlive) {
+                                                                // Kill player
+                                                                if (confirm(`Êtes-vous sûr de vouloir tuer ${player.name} ?`)) {
+                                                                    setVictims(prev => {
+                                                                        const newVictims = [...prev, player.id];
+                                                                        // Check for game over after a short delay to allow state to update
+                                                                        setTimeout(() => checkGameOver(), 100);
+                                                                        return newVictims;
+                                                                    });
+                                                                }
+                                                            } else {
+                                                                // Revive player
+                                                                if (confirm(`Êtes-vous sûr de vouloir ressusciter ${player.name} ?`)) {
+                                                                    setVictims(prev => prev.filter(id => id !== player.id));
+                                                                    setExecuted(prev => prev.filter(id => id !== player.id));
+                                                                }
+                                                            }
+                                                        }}
+                                                    >
+                                                        <div className={`mj-player-status-indicator ${isAlive ? 'alive' : 'dead'}`}>
+                                                            {isAlive ? '✓' : '✗'}
+                                                        </div>
+                                                        <div className="mj-player-name">
+                                                            {player.name}
+                                                            {cupidonLovers.includes(player.id) && <span className="mj-lover-indicator"> ❤️</span>}
+                                                            {player.name.includes('(Infecté)') && <span style={{ marginLeft: '5px', color: '#dc3545' }}> 🧟</span>}
+                                                        </div>
+                                                        <div className="mj-player-role">
+                                                            <div className="mj-player-role-name">
+                                                                {player.card.name}
+                                                                {player.name.includes('(Infecté)') &&
+                                                                    <span style={{
+                                                                        fontSize: '0.8em',
+                                                                        color: '#dc3545',
+                                                                        marginLeft: '5px',
+                                                                        fontStyle: 'italic'
+                                                                    }}>
+                                                                        (Infecté)
+                                                                    </span>
+                                                                }
+                                                            </div>
+                                                            <div className={`mj-player-team ${player.name.includes('(Infecté)') || player.card.team === 'Loups-Garous' ? 'loups-garous' : player.card.team.toLowerCase()}`}>
+                                                                {player.name.includes('(Infecté)') || player.card.team === 'Loups-Garous' ? 'Loups-Garous' : player.card.team}
+                                                            </div>
+                                                        </div>
+                                                        <div className="mj-player-action-hint"></div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+
+                                    <div className="mj-player-management-footer">
+                                        <div className="mj-player-management-stats">
+                                            <div className="mj-player-stat">
+                                                Vivants: <span className="mj-player-stat-value">{getAlivePlayers().length}</span>
+                                            </div>
+                                            <div className="mj-player-stat">
+                                                Morts: <span className="mj-player-stat-value">{gameConfig.players.length - getAlivePlayers().length}</span>
+                                            </div>
+                                        </div>
+                                        <div className="mj-player-management-actions">
+                                            <button
+                                                className="mj-btn-close"
+                                                onClick={() => setShowRemainingPlayers(false)}
+                                            >
+                                                Fermer
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    )}
+                </>
             )}
         </div>
     );

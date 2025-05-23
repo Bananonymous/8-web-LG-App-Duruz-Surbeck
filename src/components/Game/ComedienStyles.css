@@ -1,0 +1,127 @@
+/* Comedian Role Styles */
+
+.mj-comedien-action {
+  width: 100%;
+}
+
+.mj-comedien-selection h4 {
+  margin-bottom: 0.5rem;
+  color: white;
+  text-align: center;
+}
+
+.mj-comedien-instruction {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1.5rem;
+  font-style: italic;
+  padding: 0 1rem;
+}
+
+.mj-comedien-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mj-comedien-role-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  border: 2px solid transparent;
+}
+
+.mj-comedien-role-card:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.mj-comedien-role-card.used {
+  opacity: 0.7;
+  border-color: rgba(255, 215, 0, 0.5);
+}
+
+.mj-comedien-role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.mj-comedien-role-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  text-align: left;
+}
+
+.mj-comedien-role-desc {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.5rem;
+  max-height: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.mj-comedien-role-used {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: rgba(255, 215, 0, 0.8);
+  color: black;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.mj-comedien-imitation {
+  width: 100%;
+}
+
+.mj-comedien-imitation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0.8rem;
+  background-color: rgba(255, 215, 0, 0.2);
+  border-radius: 8px;
+}
+
+.mj-comedien-imitation-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.mj-comedien-imitation-header h4 {
+  margin: 0;
+  color: rgba(255, 215, 0, 1);
+}
+
+.mj-comedien-imitation-note {
+  margin: 0.3rem 0 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .mj-comedien-roles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mj-comedien-imitation-header {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+}

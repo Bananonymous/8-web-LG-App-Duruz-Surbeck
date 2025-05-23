@@ -1,0 +1,62 @@
+/* Card Detail Dark Mode Styles */
+
+.card-detail {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 1000px;
+  margin: 2rem auto;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-detail-section {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-left: 4px solid var(--primary-color);
+  color: var(--text-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card-detail-section:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.card-detail-section p {
+  color: var(--text-light);
+}
+
+.card-detail-image {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card-detail-image:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+}
+
+.card-detail-section h2 {
+  color: var(--primary-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .card-detail {
+    padding: 1.5rem;
+    margin: 1rem auto;
+  }
+
+  .card-detail-section {
+    padding: 1rem;
+  }
+
+  .card-detail-image {
+    width: 200px;
+    height: 200px;
+  }
+}

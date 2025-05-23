@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 // Create a context for theme management
 const ThemeContext = createContext();
@@ -8,36 +8,16 @@ export const useTheme = () => useContext(ThemeContext);
 
 // Theme provider component
 export const ThemeProvider = ({ children }) => {
-  // Check if user has a theme preference in localStorage
-  const getInitialTheme = () => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      return savedTheme;
-    }
-    
-    // Check if user prefers dark mode at system level
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'dark' : 'light';
-  };
+  // Always use dark theme
+  const theme = 'dark';
 
-  const [theme, setTheme] = useState(getInitialTheme);
-
-  // Toggle between light and dark themes
-  const toggleTheme = () => {
-    setTheme(prevTheme => {
-      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('theme', newTheme);
-      return newTheme;
-    });
-  };
-
-  // Apply theme to document when it changes
+  // Apply dark theme to document on mount
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,7 +1,10 @@
 -- Database initialization for Werewolf Game
 -- This file contains all the SQL needed to initialize the database
 
--- Create tables
+-- Begin transaction for better performance and atomicity
+BEGIN TRANSACTION;
+
+-- Create tables with unique constraints to prevent duplicates
 CREATE TABLE IF NOT EXISTS cards (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -12,7 +15,8 @@ CREATE TABLE IF NOT EXISTS cards (
   is_custom BOOLEAN DEFAULT 0,
   wakes_up_at_night BOOLEAN DEFAULT 0,
   wakes_up_every_night BOOLEAN DEFAULT 0,
-  wake_up_frequency TEXT
+  wake_up_frequency TEXT,
+  UNIQUE(name, team)
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -22,17 +26,11 @@ CREATE TABLE IF NOT EXISTS users (
   is_admin BOOLEAN DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS events (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
-  date TEXT NOT NULL,
-  description TEXT,
-  location TEXT
-);
+-- Events table removed in favor of Google Calendar integration
 
 CREATE TABLE IF NOT EXISTS variants (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
+  name TEXT UNIQUE NOT NULL,
   description TEXT NOT NULL,
   lore TEXT,
   image_url TEXT
@@ -49,6 +47,7 @@ CREATE TABLE IF NOT EXISTS variant_cards (
   wakes_up_at_night BOOLEAN DEFAULT 0,
   wakes_up_every_night BOOLEAN DEFAULT 0,
   wake_up_frequency TEXT,
+  UNIQUE(variant_id, name),
   FOREIGN KEY (variant_id) REFERENCES variants (id) ON DELETE CASCADE
 );
 
@@ -56,7 +55,8 @@ CREATE TABLE IF NOT EXISTS wake_up_order (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   variant_id TEXT NOT NULL,
   include_base BOOLEAN DEFAULT 1,
-  order_data TEXT NOT NULL
+  order_data TEXT NOT NULL,
+  UNIQUE(variant_id, include_base)
 );
 
 -- Insert default admin user
@@ -64,11 +64,7 @@ INSERT OR IGNORE INTO users (username, password, is_admin)
 VALUES ('admin', '$2a$10$JqPzUZuCbTvXZRqPcZqgH.Ot.QJA5QYZlGbUxLJLy5YwMKxXwE8Vy', 1);
 -- Password is 'admin123' (bcrypt hashed)
 
--- Insert default events
-INSERT OR IGNORE INTO events (title, date, description, location)
-VALUES
-('Soirée Loups-Garous', '2023-12-15', 'Venez jouer aux Loups-Garous de Thiercelieux !', 'Ludothèque de la ville'),
-('Tournoi Loups-Garous', '2024-01-20', 'Grand tournoi annuel de Loups-Garous', 'Salle des fêtes');
+-- Default events removed in favor of Google Calendar integration
 
 -- Insert default variants
 INSERT OR IGNORE INTO variants (name, description, lore, image_url)
@@ -89,7 +85,7 @@ VALUES
 '/images/loup_alpha.svg', 1, 0, '1/3 nights');
 
 -- Insert base game cards
-INSERT OR REPLACE INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency)
+INSERT OR IGNORE INTO cards (name, team, description, lore, image_url, is_custom, wakes_up_at_night, wakes_up_every_night, wake_up_frequency)
 VALUES
 -- Village team
 ('Simple villageois', 'Village', 'vote chaque jour avec le village pour tuer quelqu''un',
@@ -229,3 +225,6 @@ VALUES
 ('Pyromane', 'Solitaire', 'Le Pyromane peut asperger d''essence un joueur chaque nuit, puis tous les brûler pour gagner.',
 'Fasciné par le feu, il prépare méthodiquement son grand spectacle final.',
 '/images/pyromane.png', 0, 1, 1, null);
+
+-- Commit the transaction to ensure all changes are saved
+COMMIT;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import '../Cards/CardDetail.css';
 
 const VariantCardDetail = () => {
   const { id } = useParams();
@@ -31,6 +32,13 @@ const VariantCardDetail = () => {
 
     fetchCardAndVariant();
   }, [id]);
+
+  // Get team class name for styling
+  const getTeamClassName = (team) => {
+    if (!team) return '';
+    if (team === 'Seul') return 'solitaire';
+    return team.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  };
 
   const handleBackClick = () => {
     if (variant) {
@@ -67,7 +75,9 @@ const VariantCardDetail = () => {
         <div className="card-detail-info">
           <h1>{card.name}</h1>
           <div className="card-detail-badges">
-            <span className="card-detail-team">{card.team}</span>
+            <span className={`card-detail-team ${getTeamClassName(card.team)}`}>
+              {card.team === 'Seul' ? 'Solitaire' : card.team}
+            </span>
             {variant && (
               <span className="card-detail-variant">{variant.name}</span>
             )}
@@ -87,9 +97,20 @@ const VariantCardDetail = () => {
         </div>
       )}
 
+      {(card.wakes_up_at_night || card.wakes_up_every_night) && (
+        <div className="card-detail-section">
+          <h2>Réveil nocturne</h2>
+          <p>
+            {card.wakes_up_at_night ? 'Se réveille la nuit' : 'Ne se réveille pas la nuit'}
+            {card.wakes_up_every_night && ' à chaque tour'}
+            {card.wake_up_frequency && ` (${card.wake_up_frequency})`}
+          </p>
+        </div>
+      )}
+
       <div className="card-detail-actions">
         <button className="btn" onClick={handleBackClick}>
-          Retour à la variante
+          &larr; Retour à la variante
         </button>
       </div>
     </div>
