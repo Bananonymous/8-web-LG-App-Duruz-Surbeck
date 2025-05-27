@@ -11,17 +11,15 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const fs = require('fs');
 
-// Import our card utilities
-const cardUtils = require('./lib/cardUtils.cjs');
-// Import our logger
-const { createLogger } = require('./lib/logger.cjs');
-const logger = createLogger('Server');
-// Import database initialization module
-const { initializeDatabase } = require('./db-init.cjs');
-
-// Import routes
-const googleCalendarRoutes = require('./server/routes/googleCalendar.cjs');
+// Simple logging utility
+const logger = {
+  info: (msg) => console.log(`[INFO] ${msg}`),
+  warn: (msg) => console.warn(`[WARN] ${msg}`),
+  error: (msg) => console.error(`[ERROR] ${msg}`),
+  success: (msg) => console.log(`[SUCCESS] ${msg}`)
+};
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,19 +43,28 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Use routes
-app.use('/api/google-calendar', googleCalendarRoutes);
-
 // Connexion à la base de données SQLite
 const db = new Database(path.join(__dirname, 'database.sqlite'), { verbose: console.log });
 
-// Initialiser la base de données avec notre nouveau module
-initializeDatabase(db, {
-  credentials: {
-    username: ADMIN_USERNAME,
-    password: ADMIN_PASSWORD
+// Initialize database tables
+try {
+  // Read and execute SQL initialization file
+  const fs = require('fs');
+  const sqlFile = fs.readFileSync(path.join(__dirname, 'db-init.sql'), 'utf8');
+  db.exec(sqlFile);
+
+  // Create admin user if it doesn't exist
+  const adminExists = db.prepare('SELECT * FROM users WHERE username = ?').get(ADMIN_USERNAME);
+  if (!adminExists) {
+    const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+    db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)').run(ADMIN_USERNAME, hashedPassword, 1);
+    logger.info('Admin user created successfully');
   }
-});
+
+  logger.info('Database initialized successfully');
+} catch (error) {
+  logger.error('Database initialization failed:', error);
+}
 
 // Middleware d'authentification
 const authenticateToken = (req, res, next) => {

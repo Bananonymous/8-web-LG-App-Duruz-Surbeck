@@ -1,17 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/fr';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import axios from 'axios';
 import './Calendar.css';
 
 // Set up the localizer for react-big-calendar
 moment.locale('fr');
 const localizer = momentLocalizer(moment);
-
-// Google Calendar ID for the public calendar
-const CALENDAR_ID = 'ah514a5j4gd708f6oup8lhorv8@group.calendar.google.com';
 
 const ModernCalendar = () => {
   const [events, setEvents] = useState([]);
@@ -19,111 +15,60 @@ const ModernCalendar = () => {
   const [error, setError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [view, setView] = useState('list'); // 'month', 'week', 'day', 'list'
-  const [useMockData, setUseMockData] = useState(true); // Toggle between mock and real data
-
-  // Toggle between mock and real data
-  const toggleDataSource = () => {
-    setUseMockData(!useMockData);
-  };
-
-  // Define fetchEvents with useCallback to avoid dependency issues
-  const fetchEvents = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      if (useMockData) {
-        // Use mock data for demonstration purposes
-        console.log('Using mock calendar data');
-        const mockEvents = [
-          {
-            id: '1',
-            summary: 'Partie de Loups-Garous',
-            description: 'Venez participer à une partie de Loups-Garous!',
-            location: 'Salle de jeux',
-            start: { dateTime: new Date(Date.now() + 86400000).toISOString() }, // tomorrow
-            end: { dateTime: new Date(Date.now() + 86400000 + 7200000).toISOString() }, // tomorrow + 2 hours
-            htmlLink: 'https://calendar.google.com/calendar/event?eid=example'
-          },
-          {
-            id: '2',
-            summary: 'Tournoi de Loups-Garous',
-            description: 'Grand tournoi de Loups-Garous avec prix à gagner!',
-            location: 'Centre de loisirs',
-            start: { dateTime: new Date(Date.now() + 172800000).toISOString() }, // day after tomorrow
-            end: { dateTime: new Date(Date.now() + 172800000 + 14400000).toISOString() }, // day after tomorrow + 4 hours
-            htmlLink: 'https://calendar.google.com/calendar/event?eid=example2'
-          },
-          {
-            id: '3',
-            summary: 'Initiation aux Loups-Garous',
-            description: 'Séance d\'initiation pour les débutants',
-            location: 'Bibliothèque municipale',
-            start: { dateTime: new Date(Date.now() + 432000000).toISOString() }, // 5 days from now
-            end: { dateTime: new Date(Date.now() + 432000000 + 5400000).toISOString() }, // 5 days from now + 1.5 hours
-            htmlLink: 'https://calendar.google.com/calendar/event?eid=example3'
-          }
-        ];
-
-        // Transform mock events to react-big-calendar format
-        const formattedEvents = mockEvents.map(event => ({
-          id: event.id,
-          title: event.summary,
-          start: new Date(event.start.dateTime || event.start.date),
-          end: new Date(event.end.dateTime || event.end.date),
-          description: event.description,
-          location: event.location,
-          allDay: !event.start.dateTime,
-          htmlLink: event.htmlLink
-        }));
-
-        setEvents(formattedEvents);
-        setLoading(false);
-        return;
-      }
-
-      // For real data, use the Google Calendar API with a proxy server
-      // This avoids CORS and authentication issues
-      try {
-        console.log('Fetching real calendar data');
-        const response = await axios.get(`http://localhost:5000/api/calendar/events?calendarId=${CALENDAR_ID}`);
-
-        if (response.data && response.data.items) {
-          // Transform Google Calendar events to react-big-calendar format
-          const formattedEvents = response.data.items.map(event => ({
-            id: event.id,
-            title: event.summary,
-            start: new Date(event.start.dateTime || event.start.date),
-            end: new Date(event.end.dateTime || event.end.date),
-            description: event.description,
-            location: event.location,
-            allDay: !event.start.dateTime,
-            htmlLink: event.htmlLink
-          }));
-
-          setEvents(formattedEvents);
-        } else {
-          throw new Error('Invalid response format from API');
-        }
-      } catch (error) {
-        console.error('Error fetching real calendar data:', error);
-        setError(`Erreur lors du chargement des événements réels: ${error.message}. Utilisation des données de démonstration.`);
-
-        // Fall back to mock data if real data fails
-        setUseMockData(true);
-      } finally {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Error in fetchEvents:', error);
-      setError('Erreur lors du chargement des événements');
-      setLoading(false);
-    }
-  }, [useMockData]);
 
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    // Load demo events
+    try {
+      const mockEvents = [
+        {
+          id: '1',
+          summary: 'Partie de Loups-Garous',
+          description: 'Venez participer à une partie de Loups-Garous!',
+          location: 'Salle de jeux',
+          start: { dateTime: new Date(Date.now() + 86400000).toISOString() }, // tomorrow
+          end: { dateTime: new Date(Date.now() + 86400000 + 7200000).toISOString() }, // tomorrow + 2 hours
+          htmlLink: 'https://calendar.google.com/calendar/event?eid=example'
+        },
+        {
+          id: '2',
+          summary: 'Tournoi de Loups-Garous',
+          description: 'Grand tournoi de Loups-Garous avec prix à gagner!',
+          location: 'Centre de loisirs',
+          start: { dateTime: new Date(Date.now() + 172800000).toISOString() }, // day after tomorrow
+          end: { dateTime: new Date(Date.now() + 172800000 + 14400000).toISOString() }, // day after tomorrow + 4 hours
+          htmlLink: 'https://calendar.google.com/calendar/event?eid=example2'
+        },
+        {
+          id: '3',
+          summary: 'Initiation aux Loups-Garous',
+          description: 'Séance d\'initiation pour les débutants',
+          location: 'Bibliothèque municipale',
+          start: { dateTime: new Date(Date.now() + 432000000).toISOString() }, // 5 days from now
+          end: { dateTime: new Date(Date.now() + 432000000 + 5400000).toISOString() }, // 5 days from now + 1.5 hours
+          htmlLink: 'https://calendar.google.com/calendar/event?eid=example3'
+        }
+      ];
+
+      // Transform mock events to react-big-calendar format
+      const formattedEvents = mockEvents.map(event => ({
+        id: event.id,
+        title: event.summary,
+        start: new Date(event.start.dateTime || event.start.date),
+        end: new Date(event.end.dateTime || event.end.date),
+        description: event.description,
+        location: event.location,
+        allDay: !event.start.dateTime,
+        htmlLink: event.htmlLink
+      }));
+
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error('Error loading events:', error);
+      setError('Erreur lors du chargement des événements');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Handle event selection
   const handleSelectEvent = (event) => {
@@ -247,11 +192,8 @@ const ModernCalendar = () => {
         <div className="error">
           <h3>Erreur de chargement</h3>
           <p>{error}</p>
-          <button className="btn" onClick={fetchEvents}>
+          <button className="btn" onClick={() => window.location.reload()}>
             Réessayer
-          </button>
-          <button className="btn" onClick={toggleDataSource} style={{ marginLeft: '10px' }}>
-            {useMockData ? 'Utiliser les données réelles' : 'Utiliser les données de démo'}
           </button>
         </div>
       </div>
@@ -276,13 +218,6 @@ const ModernCalendar = () => {
             onClick={() => toggleView('month')}
           >
             Calendrier
-          </button>
-          <button
-            className={`view-toggle-btn ${useMockData ? 'active' : ''}`}
-            onClick={toggleDataSource}
-            style={{ marginLeft: '10px' }}
-          >
-            {useMockData ? 'Données de démo' : 'Données réelles'}
           </button>
         </div>
       </div>
