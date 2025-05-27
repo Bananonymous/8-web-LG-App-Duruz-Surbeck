@@ -19,7 +19,7 @@ class GoogleCalendarService {
    */
   async fetchPublicCalendarEvents(calendarId = PUBLIC_CALENDAR_ID, maxResults = 10) {
     try {
-      if (!this.apiKey || this.apiKey === 'AIzaSyDrNGUuFuCaG5xmT0rOSb6LqOiVfM7kR1c') {
+      if (!this.apiKey || this.apiKey === '') {
         console.warn('Google API key not configured properly');
         return [];
       }
