@@ -3,7 +3,6 @@ import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AdminPanel.css';
 import { WakeUpOrderConfig } from '../Game';
-import AdminResetCards from './AdminResetCards';
 import AdminLogin from './AdminLogin';
 
 // Sous-composants pour l'administration
@@ -24,11 +23,6 @@ const AdminHome = () => {
           Ordre de Réveil
         </Link>
       </div>
-
-      <div className="admin-section" style={{ marginTop: '2rem' }}>
-        <h3>Maintenance</h3>
-        <AdminResetCards />
-      </div>
     </div>
   );
 };
@@ -40,32 +34,6 @@ const CardManager = () => {
   const [error, setError] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
-
-  const handleRefresh = () => {
-    setLoading(true);
-    setRefreshKey(oldKey => oldKey + 1);
-  };
-
-  const handleHardRefresh = () => {
-    // Force a complete page reload, bypassing the cache
-    window.location.reload(true);
-  };
-
-  const handleFixIds = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/fix-card-ids');
-      console.log('Fix IDs response:', response.data);
-      alert(`IDs fixed: ${JSON.stringify(response.data, null, 2)}`);
-      // Refresh the data
-      setRefreshKey(oldKey => oldKey + 1);
-    } catch (error) {
-      console.error('Error fixing IDs:', error);
-      alert('Error fixing IDs: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     const fetchCards = async () => {

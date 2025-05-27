@@ -974,9 +974,68 @@ body {
     gap: 0.5rem;
   }
 
+  .cards-container {
+    padding: 0.5rem;
+  }
+
+  .cards-filters {
+    margin: 1rem 0;
+    gap: 0.5rem;
+  }
+
+  .filter-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .search-input,
+  .filter-select {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
   .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.25rem;
+    margin-top: 1rem;
+    padding: 0 0.25rem;
+  }
+
+  .card-item {
+    border-radius: 6px;
+  }
+
+  .card-image-container {
+    padding-top: 80%;
+  }
+
+  .card-image {
+    border-radius: 4px;
+  }
+
+  .card-content {
+    padding: 0.5rem;
+  }
+
+  .card-title {
+    font-size: 0.8rem;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .custom-badge,
+  .official-badge,
+  .variant-badge {
+    font-size: 0.5rem;
+    padding: 0.1rem 0.3rem;
+    top: 0.3rem;
+    right: 0.3rem;
   }
 
   .card-detail-header {
@@ -1000,8 +1059,40 @@ body {
 }
 
 @media (max-width: 480px) {
+  .cards-container {
+    padding: 0.25rem;
+  }
+
   .card-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.15rem;
+    padding: 0 0.15rem;
+  }
+
+  .card-item {
+    border-radius: 4px;
+  }
+
+  .card-image-container {
+    padding-top: 75%;
+  }
+
+  .card-content {
+    padding: 0.4rem;
+  }
+
+  .card-title {
+    font-size: 0.7rem;
+    line-height: 1.1;
+  }
+
+  .custom-badge,
+  .official-badge,
+  .variant-badge {
+    font-size: 0.4rem;
+    padding: 0.05rem 0.2rem;
+    top: 0.2rem;
+    right: 0.2rem;
   }
 
   .home-hero h1 {

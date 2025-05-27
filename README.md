@@ -142,7 +142,6 @@ L'application expose une API REST complète:
 - **POST /api/google-calendar/refresh-token**: Rafraîchit le token d'accès Google
 - **GET /api/variants**: Liste toutes les variantes
 - **GET /api/variant-cards**: Liste les cartes d'une variante
-- **POST /api/reset-cards**: Réinitialise la base de données (admin)
 - **POST /api/login**: Authentification
 - **GET /api/verify-token**: Vérifie la validité d'un token JWT
 

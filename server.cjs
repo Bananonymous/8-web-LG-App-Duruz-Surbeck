@@ -284,54 +284,6 @@ app.delete('/api/cards/:id', authenticateToken, (req, res) => {
   }
 });
 
-// Route pour réinitialiser les cartes
-app.post('/api/reset-cards', authenticateToken, (req, res) => {
-  try {
-    // Vérifier si l'utilisateur est admin
-    if (!req.user.is_admin) {
-      return res.status(403).json({ message: 'Accès refusé. Seuls les administrateurs peuvent réinitialiser les cartes.' });
-    }
-
-    logger.info('Starting database reset process...');
-
-    // Begin transaction
-    db.exec('BEGIN TRANSACTION;');
-
-    try {
-      // Get all tables
-      const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
-
-      // Drop all tables
-      for (const table of tables) {
-        db.exec(`DROP TABLE IF EXISTS ${table.name}`);
-        logger.info(`Dropped table: ${table.name}`);
-      }
-
-      // Commit transaction
-      db.exec('COMMIT;');
-
-      // Reinitialize the database with forceReset to ensure clean initialization
-      initializeDatabase(db, {
-        credentials: {
-          username: ADMIN_USERNAME,
-          password: ADMIN_PASSWORD
-        },
-        forceReset: true
-      });
-
-      logger.success('Database reset completed successfully');
-      res.json({ message: 'Cartes réinitialisées avec succès' });
-    } catch (error) {
-      // Rollback transaction on error
-      db.exec('ROLLBACK;');
-      throw error;
-    }
-  } catch (error) {
-    logger.error('Error resetting cards:', error);
-    res.status(500).json({ message: 'Error resetting cards', error: error.message });
-  }
-});
-
 // Events routes removed in favor of Google Calendar integration
 
 // Google Calendar proxy endpoint (optional)

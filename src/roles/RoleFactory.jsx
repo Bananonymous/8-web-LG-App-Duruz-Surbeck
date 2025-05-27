@@ -1,6 +1,5 @@
 import React, { lazy, Suspense } from 'react';
 import BaseRole from './BaseRole';
-import { getRoleComponent } from './index';
 
 // Import role components
 // We'll use dynamic imports to avoid loading all roles at once
@@ -99,6 +98,53 @@ const RoleFactory = (props) => {
     return (
       <Suspense fallback={<div>Chargement du rôle...</div>}>
         <Werewolf {...fixedProps} />
+      </Suspense>
+    );
+  }
+
+  // Handle the case where role is already a card object (flat structure)
+  // This happens when GameManager passes currentRole.card directly to RoleFactory
+  if (role && role.name && !role.card) {
+    // Create a proper role object with the card nested structure
+    const fixedProps = {
+      ...props,
+      role: {
+        card: {
+          id: role.id || 0,
+          name: role.name,
+          team: role.team || 'Village',
+          description: role.description || '',
+          lore: role.lore || '',
+          image_url: role.image_url || null,
+          is_custom: role.is_custom || false,
+          wakes_up_at_night: role.wakes_up_at_night || false,
+          wakes_up_every_night: role.wakes_up_every_night || false,
+          wake_up_frequency: role.wake_up_frequency || null
+        },
+        playerId: props.playerId || 0,
+        playerName: props.playerName || role.name
+      }
+    };
+
+    // Get the appropriate component for this role
+    let RoleComponent;
+
+    // Special handling for werewolf roles vs infected players
+    if (infected) {
+      // For infected players, use the component mapped to their original role name
+      RoleComponent = roleComponentMap[role.name] || BaseRole;
+    } else if ((role.team === 'Loups-Garous' && (role.name === 'Loup-Garou' || role.name === 'Infect père des loups')) ||
+      role.name === 'Infect père des loups') {
+      // Only actual werewolf roles use the Werewolf component
+      RoleComponent = Werewolf;
+    } else {
+      // For all other roles, use the component mapped to their role name
+      RoleComponent = roleComponentMap[role.name] || BaseRole;
+    }
+
+    return (
+      <Suspense fallback={<div>Chargement du rôle...</div>}>
+        <RoleComponent {...fixedProps} />
       </Suspense>
     );
   }

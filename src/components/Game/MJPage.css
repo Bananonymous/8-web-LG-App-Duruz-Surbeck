@@ -1183,7 +1183,7 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .mj-container {
-    padding: 1rem;
+    padding: 0.5rem;
   }
 
   .mj-game-info {
@@ -1199,6 +1199,50 @@
   .mj-phase-header {
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .mj-card-selection {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.25rem;
+    margin-top: 1rem;
+    padding: 0 0.25rem;
+  }
+
+  .mj-card-item {
+    padding: 0.5rem;
+    border-radius: 6px;
+  }
+
+  .mj-card-image {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0.3rem;
+  }
+
+  .mj-card-item-header h3 {
+    font-size: 0.8rem;
+    margin: 0 0 0.2rem 0;
+    line-height: 1.2;
+  }
+
+  .mj-card-team {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.3rem;
+  }
+
+  .mj-card-variant-badge {
+    font-size: 0.5rem;
+    padding: 0.1rem 0.3rem;
+    top: 0.3rem;
+    right: 0.3rem;
+  }
+
+  .mj-card-count {
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: 0.7rem;
+    bottom: 0.3rem;
+    right: 0.3rem;
   }
 
   .mj-witch-potions {
