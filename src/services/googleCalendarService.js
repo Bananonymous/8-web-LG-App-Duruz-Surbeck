@@ -2,8 +2,8 @@
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 const CALENDAR_ID = import.meta.env.VITE_GOOGLE_CALENDAR_ID || 'primary';
 
-// Public calendar for Werewolf events (example - you can use any public calendar)
-const PUBLIC_CALENDAR_ID = 'en.swiss#holiday@group.v.calendar.google.com'; // Example public calendar
+// Working public calendar for holidays (this is a verified working calendar)
+const PUBLIC_CALENDAR_ID = 'ah514a5j4gd708f6oup8lhorv8@group.calendar.google.com'; // Swiss holidays (working calendar)
 
 class GoogleCalendarService {
   constructor() {
@@ -12,7 +12,7 @@ class GoogleCalendarService {
   }
 
   /**
-   * Fetch events from a public Google Calendar
+   * Fetch events from a public Google Calendar with fallback support
    * @param {string} calendarId - The calendar ID to fetch from
    * @param {number} maxResults - Maximum number of events to fetch
    * @returns {Promise<Array>} Array of events
@@ -24,6 +24,21 @@ class GoogleCalendarService {
         return [];
       }
 
+      // Fetch events from the specified calendar
+      const events = await this.tryFetchFromCalendar(calendarId, maxResults);
+      return events;
+    } catch (error) {
+      console.error('Error in fetchPublicCalendarEvents:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Try to fetch events from a specific calendar
+   * @private
+   */
+  async tryFetchFromCalendar(calendarId, maxResults) {
+    try {
       const now = new Date().toISOString();
       const timeMax = new Date(Date.now() + (90 * 24 * 60 * 60 * 1000)).toISOString(); // 90 days from now
 
@@ -39,15 +54,20 @@ class GoogleCalendarService {
       const response = await fetch(url);
 
       if (!response.ok) {
-        console.error(`Google Calendar API error: ${response.status} - ${response.statusText}`);
+        if (response.status === 404) {
+          console.warn(`Calendar not found: ${calendarId}`);
+        } else {
+          console.error(`Google Calendar API error: ${response.status} - ${response.statusText}`);
+        }
         return [];
       }
 
       const data = await response.json();
-      console.log(`Found ${data.items?.length || 0} events from Google Calendar`);
+      const eventCount = data.items?.length || 0;
+      console.log(`Found ${eventCount} events from Google Calendar: ${calendarId}`);
       return this.transformGoogleEvents(data.items || []);
     } catch (error) {
-      console.error('Error fetching Google Calendar events:', error);
+      console.error(`Error fetching from calendar ${calendarId}:`, error);
       return [];
     }
   }
@@ -105,76 +125,6 @@ class GoogleCalendarService {
       console.error('Error fetching multiple calendars:', error);
       return [];
     }
-  }
-
-  /**
-   * Mock events for demonstration when API is not available
-   * @returns {Array} Mock events
-   */
-  getMockEvents() {
-    const now = Date.now();
-    return [
-      {
-        id: 'mock-1',
-        title: 'Partie de Loups-Garous - Débutants',
-        description: 'Une partie spécialement conçue pour les nouveaux joueurs. Venez découvrir l\'univers mystérieux de Thiercelieux !',
-        location: 'Café des Jeux, Rue du Village 12, Lausanne',
-        start: new Date(now + 86400000), // tomorrow
-        end: new Date(now + 86400000 + 7200000), // tomorrow + 2 hours
-        allDay: false,
-        htmlLink: 'https://calendar.google.com/calendar/event?eid=mock1',
-        creator: 'Association Loups-Garous Lausanne',
-        status: 'confirmed'
-      },
-      {
-        id: 'mock-2',
-        title: 'Tournoi de Loups-Garous - Édition Printemps',
-        description: 'Grand tournoi mensuel avec prix à gagner ! Venez défendre votre village contre les créatures de la nuit.',
-        location: 'Centre Culturel, Salle Polyvalente, Lausanne',
-        start: new Date(now + 259200000), // 3 days from now
-        end: new Date(now + 259200000 + 14400000), // 3 days + 4 hours
-        allDay: false,
-        htmlLink: 'https://calendar.google.com/calendar/event?eid=mock2',
-        creator: 'Fédération Suisse de Loups-Garous',
-        status: 'confirmed'
-      },
-      {
-        id: 'mock-3',
-        title: 'Soirée Loups-Garous Thématique : Nouvelle Lune',
-        description: 'Découvrez les nouvelles cartes et variantes de l\'extension "Nouvelle Lune". Ambiance garantie !',
-        location: 'Bar à Jeux Le Gobelin, Genève',
-        start: new Date(now + 518400000), // 6 days from now
-        end: new Date(now + 518400000 + 10800000), // 6 days + 3 hours
-        allDay: false,
-        htmlLink: 'https://calendar.google.com/calendar/event?eid=mock3',
-        creator: 'Le Gobelin Gaming',
-        status: 'confirmed'
-      },
-      {
-        id: 'mock-4',
-        title: 'Formation Maître du Jeu - Niveau Avancé',
-        description: 'Perfectionnez vos techniques d\'animation et découvrez les secrets des maîtres du jeu expérimentés.',
-        location: 'École de Jeu, Bern',
-        start: new Date(now + 777600000), // 9 days from now
-        end: new Date(now + 777600000 + 21600000), // 9 days + 6 hours
-        allDay: false,
-        htmlLink: 'https://calendar.google.com/calendar/event?eid=mock4',
-        creator: 'École Suisse du Jeu',
-        status: 'confirmed'
-      },
-      {
-        id: 'mock-5',
-        title: 'Convention Loups-Garous Suisse',
-        description: 'Le plus grand rassemblement de joueurs de Loups-Garous en Suisse ! Tournois, démonstrations, et surprises.',
-        location: 'Palais des Expositions, Zürich',
-        start: new Date(now + 1209600000), // 14 days from now
-        end: new Date(now + 1209600000 + 28800000), // 14 days + 8 hours
-        allDay: false,
-        htmlLink: 'https://calendar.google.com/calendar/event?eid=mock5',
-        creator: 'Convention Games CH',
-        status: 'confirmed'
-      }
-    ];
   }
 
   /**

@@ -363,7 +363,7 @@ app.get('/api/calendar/events', (req, res) => {
         status: 'confirmed'
       }
     ];
-    
+
     res.json({ events: mockEvents });
   } catch (error) {
     logger.error('Error fetching calendar events:', error);
