@@ -88,12 +88,21 @@ Une application web complète pour gérer et jouer aux Loups-Garous de Thierceli
    npm install
    ```
 
-3. Démarrez le serveur de développement
+3. **Configuration des variables d'environnement** (Important!)
+   ```bash
+   # Copiez le fichier exemple
+   cp .env.example .env
+   
+   # Modifiez .env avec vos vraies clés API
+   # IMPORTANT: Ne jamais commiter le fichier .env (il est dans .gitignore)
+   ```
+
+4. Démarrez le serveur de développement
    ```
    npm run dev
    ```
 
-4. Dans un autre terminal, démarrez le serveur backend
+5. Dans un autre terminal, démarrez le serveur backend
    ```
    node server.cjs
    ```

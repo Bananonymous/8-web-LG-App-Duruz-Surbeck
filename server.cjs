@@ -334,6 +334,43 @@ app.post('/api/reset-cards', authenticateToken, (req, res) => {
 
 // Events routes removed in favor of Google Calendar integration
 
+// Google Calendar proxy endpoint (optional)
+app.get('/api/calendar/events', (req, res) => {
+  try {
+    // This endpoint can be used to proxy Google Calendar requests
+    // if you need server-side API key management
+    const mockEvents = [
+      {
+        id: 'server-mock-1',
+        summary: 'Partie de Loups-Garous - Débutants',
+        description: 'Une partie spécialement conçue pour les nouveaux joueurs. Venez découvrir l\'univers mystérieux de Thiercelieux !',
+        location: 'Café des Jeux, Rue du Village 12, Lausanne',
+        start: { dateTime: new Date(Date.now() + 86400000).toISOString() },
+        end: { dateTime: new Date(Date.now() + 86400000 + 7200000).toISOString() },
+        htmlLink: 'https://calendar.google.com/calendar/event?eid=servermock1',
+        creator: { displayName: 'Association Loups-Garous Lausanne' },
+        status: 'confirmed'
+      },
+      {
+        id: 'server-mock-2',
+        summary: 'Tournoi de Loups-Garous - Édition Printemps',
+        description: 'Grand tournoi mensuel avec prix à gagner ! Venez défendre votre village contre les créatures de la nuit.',
+        location: 'Centre Culturel, Salle Polyvalente, Lausanne',
+        start: { dateTime: new Date(Date.now() + 259200000).toISOString() },
+        end: { dateTime: new Date(Date.now() + 259200000 + 14400000).toISOString() },
+        htmlLink: 'https://calendar.google.com/calendar/event?eid=servermock2',
+        creator: { displayName: 'Fédération Suisse de Loups-Garous' },
+        status: 'confirmed'
+      }
+    ];
+    
+    res.json({ events: mockEvents });
+  } catch (error) {
+    logger.error('Error fetching calendar events:', error);
+    res.status(500).json({ message: 'Error fetching calendar events', error: error.message });
+  }
+});
+
 // Routes pour les variantes
 app.get('/api/variants', (req, res) => {
   const variants = db.prepare('SELECT * FROM variants').all();

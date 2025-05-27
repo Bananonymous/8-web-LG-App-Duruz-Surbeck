@@ -4,6 +4,7 @@ import moment from 'moment';
 import 'moment/locale/fr';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './Calendar.css';
+import googleCalendarService from '../../services/googleCalendarService';
 
 // Set up the localizer for react-big-calendar
 moment.locale('fr');
@@ -15,59 +16,48 @@ const ModernCalendar = () => {
   const [error, setError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [view, setView] = useState('list'); // 'month', 'week', 'day', 'list'
+  const [isGoogleCalendar, setIsGoogleCalendar] = useState(false);
 
   useEffect(() => {
-    // Load demo events
-    try {
-      const mockEvents = [
-        {
-          id: '1',
-          summary: 'Partie de Loups-Garous',
-          description: 'Venez participer à une partie de Loups-Garous!',
-          location: 'Salle de jeux',
-          start: { dateTime: new Date(Date.now() + 86400000).toISOString() }, // tomorrow
-          end: { dateTime: new Date(Date.now() + 86400000 + 7200000).toISOString() }, // tomorrow + 2 hours
-          htmlLink: 'https://calendar.google.com/calendar/event?eid=example'
-        },
-        {
-          id: '2',
-          summary: 'Tournoi de Loups-Garous',
-          description: 'Grand tournoi de Loups-Garous avec prix à gagner!',
-          location: 'Centre de loisirs',
-          start: { dateTime: new Date(Date.now() + 172800000).toISOString() }, // day after tomorrow
-          end: { dateTime: new Date(Date.now() + 172800000 + 14400000).toISOString() }, // day after tomorrow + 4 hours
-          htmlLink: 'https://calendar.google.com/calendar/event?eid=example2'
-        },
-        {
-          id: '3',
-          summary: 'Initiation aux Loups-Garous',
-          description: 'Séance d\'initiation pour les débutants',
-          location: 'Bibliothèque municipale',
-          start: { dateTime: new Date(Date.now() + 432000000).toISOString() }, // 5 days from now
-          end: { dateTime: new Date(Date.now() + 432000000 + 5400000).toISOString() }, // 5 days from now + 1.5 hours
-          htmlLink: 'https://calendar.google.com/calendar/event?eid=example3'
+    // Load events from Google Calendar
+    const loadEvents = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        // Try to fetch from Google Calendar
+        const calendarEvents = await googleCalendarService.fetchPublicCalendarEvents();
+        setIsGoogleCalendar(import.meta.env.VITE_GOOGLE_API_KEY && import.meta.env.VITE_GOOGLE_API_KEY !== 'AIzaSyDrNGUuFuCaG5xmT0rOSb6LqOiVfM7kR1c');
+        
+        // Transform events for react-big-calendar
+        const formattedEvents = calendarEvents.map(event => ({
+          id: event.id,
+          title: event.title,
+          start: new Date(event.start),
+          end: new Date(event.end),
+          description: event.description,
+          location: event.location,
+          allDay: event.allDay,
+          htmlLink: event.htmlLink,
+          creator: event.creator,
+          status: event.status
+        }));
+
+        setEvents(formattedEvents);
+        
+        if (formattedEvents.length === 0) {
+          console.log('No events found in Google Calendar');
         }
-      ];
+      } catch (error) {
+        console.error('Error loading events:', error);
+        setError('Erreur lors du chargement des événements du calendrier');
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      // Transform mock events to react-big-calendar format
-      const formattedEvents = mockEvents.map(event => ({
-        id: event.id,
-        title: event.summary,
-        start: new Date(event.start.dateTime || event.start.date),
-        end: new Date(event.end.dateTime || event.end.date),
-        description: event.description,
-        location: event.location,
-        allDay: !event.start.dateTime,
-        htmlLink: event.htmlLink
-      }));
-
-      setEvents(formattedEvents);
-    } catch (error) {
-      console.error('Error loading events:', error);
-      setError('Erreur lors du chargement des événements');
-    } finally {
-      setLoading(false);
-    }
+    loadEvents();
   }, []);
 
   // Handle event selection
@@ -102,8 +92,23 @@ const ModernCalendar = () => {
     if (events.length === 0) {
       return (
         <div className="no-events">
-          <h3>Aucun événement à venir</h3>
-          <p>Il n'y a pas d'événements planifiés pour le moment.</p>
+          {isGoogleCalendar ? (
+            <>
+              <h3>Aucun événement trouvé</h3>
+              <p>Aucun événement Loups-Garous n'est programmé dans le calendrier Google configuré.</p>
+              <p>Vérifiez que le calendrier contient des événements ou contactez l'organisateur.</p>
+            </>
+          ) : (
+            <>
+              <h3>Calendrier Google non configuré</h3>
+              <p>Pour afficher les vrais événements, configurez votre clé API Google Calendar.</p>
+              <p>Consultez le fichier <code>GOOGLE_CALENDAR_SETUP.md</code> pour les instructions.</p>
+            </>
+          )}
+          <button className="btn" onClick={refreshEvents}>
+            <i className="fas fa-sync-alt"></i>
+            Réessayer
+          </button>
         </div>
       );
     }
@@ -124,12 +129,20 @@ const ModernCalendar = () => {
                 <i className="fas fa-map-marker-alt"></i> {event.location}
               </div>
             )}
-            <button className="btn btn-sm" onClick={(e) => {
-              e.stopPropagation();
-              addToCalendar(event);
-            }}>
-              Ajouter à mon calendrier
-            </button>
+            {event.htmlLink ? (
+              <button className="btn btn-sm" onClick={(e) => {
+                e.stopPropagation();
+                addToCalendar(event);
+              }}>
+                <i className="fas fa-external-link-alt"></i>
+                Voir dans Google Calendar
+              </button>
+            ) : (
+              <button className="btn btn-sm" disabled>
+                <i className="fas fa-calendar"></i>
+                Lien non disponible
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -157,6 +170,11 @@ const ModernCalendar = () => {
               <strong>Lieu:</strong> {selectedEvent.location}
             </div>
           )}
+          {selectedEvent.creator && (
+            <div className="event-modal-creator">
+              <strong>Organisé par:</strong> {selectedEvent.creator}
+            </div>
+          )}
           {selectedEvent.description && (
             <div className="event-modal-description">
               <strong>Description:</strong>
@@ -164,9 +182,17 @@ const ModernCalendar = () => {
             </div>
           )}
           <div className="event-modal-actions">
-            <button className="btn" onClick={() => addToCalendar(selectedEvent)}>
-              Ajouter à mon calendrier
-            </button>
+            {selectedEvent.htmlLink ? (
+              <button className="btn" onClick={() => addToCalendar(selectedEvent)}>
+                <i className="fas fa-external-link-alt"></i>
+                Voir dans Google Calendar
+              </button>
+            ) : (
+              <button className="btn" disabled>
+                <i className="fas fa-calendar"></i>
+                Lien non disponible
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -176,6 +202,41 @@ const ModernCalendar = () => {
   // Toggle between calendar views
   const toggleView = (newView) => {
     setView(newView);
+  };
+
+  // Refresh calendar events
+  const refreshEvents = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const calendarEvents = await googleCalendarService.fetchPublicCalendarEvents();
+      
+      const formattedEvents = calendarEvents.map(event => ({
+        id: event.id,
+        title: event.title,
+        start: new Date(event.start),
+        end: new Date(event.end),
+        description: event.description,
+        location: event.location,
+        allDay: event.allDay,
+        htmlLink: event.htmlLink,
+        creator: event.creator,
+        status: event.status
+      }));
+
+      setEvents(formattedEvents);
+      
+      if (formattedEvents.length === 0) {
+        console.log('No events found after refresh');
+      }
+    } catch (error) {
+      console.error('Error refreshing events:', error);
+      setError('Erreur lors du rafraîchissement des événements');
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -205,6 +266,29 @@ const ModernCalendar = () => {
       <div className="calendar-header">
         <h1>Calendrier des Événements</h1>
         <p>Consultez les prochaines parties de Loups-Garous organisées</p>
+        
+        <div className="calendar-source-info">
+          {isGoogleCalendar ? (
+            <div className="calendar-status connected">
+              <i className="fas fa-check-circle"></i>
+              <span>Connecté au Google Calendar ({events.length} événement{events.length !== 1 ? 's' : ''})</span>
+            </div>
+          ) : (
+            <div className="calendar-status disconnected">
+              <i className="fas fa-exclamation-triangle"></i>
+              <span>Google Calendar non configuré - Aucun événement affiché</span>
+            </div>
+          )}
+          <button 
+            className="refresh-btn" 
+            onClick={refreshEvents}
+            disabled={loading}
+            title="Actualiser les événements"
+          >
+            <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
+            Actualiser
+          </button>
+        </div>
 
         <div className="view-toggle">
           <button
