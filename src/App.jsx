@@ -10,7 +10,7 @@ import { AdminPanel } from './components/Admin';
 import { VariantList, VariantLore, VariantCardDetail } from './components/Variants';
 import { MJPage } from './components/Game';
 
-// Contextes
+// Contexts
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 

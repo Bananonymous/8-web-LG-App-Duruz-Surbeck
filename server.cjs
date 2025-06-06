@@ -17,17 +17,16 @@ const fs = require('fs');
 const logger = {
   info: (msg) => console.log(`[INFO] ${msg}`),
   warn: (msg) => console.warn(`[WARN] ${msg}`),
-  error: (msg) => console.error(`[ERROR] ${msg}`),
+  error: (msg, err) => console.error(`[ERROR] ${msg}`, err),
   success: (msg) => console.log(`[SUCCESS] ${msg}`)
 };
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-// Use environment variable for JWT secret or fall back to a default (for development only)
 const JWT_SECRET = process.env.JWT_SECRET || 'votre_clé_secrète_jwt';
 
 if (JWT_SECRET === 'votre_clé_secrète_jwt') {
-  logger.warn('Using default JWT_SECRET. Set JWT_SECRET environment variable for production use.');
+  console.warn('Using default JWT_SECRET. Set JWT_SECRET environment variable for production use.');
 }
 
 // Admin credentials from environment variables
@@ -35,7 +34,7 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 if (ADMIN_USERNAME === 'admin' && ADMIN_PASSWORD === 'admin123') {
-  logger.warn('Using default admin credentials. Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables for production use.');
+  console.warn('Using default admin credentials. Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables for production use.');
 }
 
 // Middleware

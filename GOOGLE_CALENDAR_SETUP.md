@@ -2,13 +2,9 @@
 
 This document explains how to set up Google Calendar integration for the French Werewolf application.
 
-## Current Status
+## Setting up Google Calendar Integration
 
-The application is currently configured to show **NO events** until a real Google Calendar is properly configured. This ensures only real events are displayed.
-
-## Setting up Real Google Calendar Integration
-
-To connect to a real Google Calendar and display actual events, follow these steps:
+To connect to a Google Calendar and display actual events, follow these steps:
 
 ### 1. Get Google Calendar API Key
 
@@ -51,47 +47,17 @@ Example public calendar IDs you could use:
 - `en.swiss#holiday@group.v.calendar.google.com` (Swiss holidays)
 - Or create your own public Werewolf events calendar
 
-### 4. Multiple Calendar Support
-
-The service supports fetching from multiple calendars. Edit the `getKnownWerewolfCalendars()` method to add more calendar sources.
-
 ## Features
 
-✅ **Automatic Fallback**: If Google API fails, shows mock events
-✅ **Real-time Refresh**: Manual refresh button to update events
-✅ **Event Details**: Full event information from Google Calendar
-✅ **Multiple Views**: List and calendar grid views
-✅ **French Localization**: All text in French
-✅ **Status Indicator**: Shows if connected to real Google Calendar or using demo data
-
-## Current Mock Events
-
-The application shows 5 realistic Werewolf events:
-
-1. **Partie de Loups-Garous - Débutants** (Tomorrow)
-   - Location: Café des Jeux, Lausanne
-   - Beginner-friendly game session
-
-2. **Tournoi de Loups-Garous - Édition Printemps** (In 3 days)
-   - Location: Centre Culturel, Lausanne
-   - Monthly tournament with prizes
-
-3. **Soirée Loups-Garous Thématique : Nouvelle Lune** (In 6 days)
-   - Location: Bar à Jeux Le Gobelin, Genève
-   - New expansion theme night
-
-4. **Formation Maître du Jeu - Niveau Avancé** (In 9 days)
-   - Location: École de Jeu, Bern
-   - Advanced game master training
-
-5. **Convention Loups-Garous Suisse** (In 14 days)
-   - Location: Palais des Expositions, Zürich
-   - Major Swiss Werewolf convention
+- Real-time events from Google Calendar
+- Event details view with location and description
+- List and calendar grid views
+- French localization
+- Google Calendar integration
+- Error handling with fallback
 
 ## Technical Implementation
 
 - **Service**: `src/services/googleCalendarService.js`
 - **Component**: `src/components/Calendar/ModernCalendar.jsx`
 - **API**: Google Calendar API v3
-- **Fallback**: Comprehensive mock data system
-- **Error Handling**: Graceful degradation to demo mode

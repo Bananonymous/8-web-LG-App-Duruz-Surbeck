@@ -6,7 +6,6 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './Calendar.css';
 import googleCalendarService from '../../services/googleCalendarService';
 
-// Set up the localizer for react-big-calendar
 moment.locale('fr');
 const localizer = momentLocalizer(moment);
 
@@ -15,16 +14,14 @@ const ModernCalendar = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [view, setView] = useState('list'); // 'month', 'week', 'day', 'list'
+  const [view, setView] = useState('list');
 
   useEffect(() => {
-    // Load events from Google Calendar
     const loadEvents = async () => {
       try {
         setLoading(true);
         setError('');
 
-        // Fetch from Google Calendar
         const calendarEvents = await googleCalendarService.fetchPublicCalendarEvents();
 
         const finalEvents = calendarEvents.map(event => ({
@@ -53,34 +50,28 @@ const ModernCalendar = () => {
     loadEvents();
   }, []);
 
-  // Handle event selection
   const handleSelectEvent = (event) => {
     setSelectedEvent(event);
   };
 
-  // Close event details modal
   const closeEventDetails = () => {
     setSelectedEvent(null);
   };
 
-  // Add event to user's calendar
   const addToCalendar = (event) => {
     window.open(event.htmlLink, '_blank');
   };
 
-  // Format date for display
   const formatDate = (date) => {
     return moment(date).format('dddd D MMMM YYYY, HH:mm');
   };
 
-  // Custom event component for the calendar
   const EventComponent = ({ event }) => (
     <div className="calendar-event">
       <div className="calendar-event-title">{event.title}</div>
     </div>
   );
 
-  // Render upcoming events list
   const renderUpcomingEvents = () => {
     if (events.length === 0) {
       return (
@@ -127,7 +118,6 @@ const ModernCalendar = () => {
     );
   };
 
-  // Render event details modal
   const renderEventDetails = () => {
     if (!selectedEvent) return null;
 
@@ -177,7 +167,6 @@ const ModernCalendar = () => {
     );
   };
 
-  // Toggle between calendar views
   const toggleView = (newView) => {
     setView(newView);
   };
