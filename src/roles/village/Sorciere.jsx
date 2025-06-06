@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import BaseRole, { PlayerSelectionGrid, isPlayerInLove } from '../BaseRole';
+import { PlayerSelectionGrid } from '../BaseRole';
 import { registerRole } from '../index';
 
 /**
@@ -7,38 +7,39 @@ import { registerRole } from '../index';
  * Allows the witch to save the werewolf victim or kill another player
  */
 const Sorciere = ({
-  role,
-  player,
   onActionComplete,
   onPrevRole,
   alivePlayers,
   getAlivePlayers,
-  currentNight,
   gameState,
   updateGameState,
   isDead
 }) => {
   // Get relevant state from game state
-  const { nightVictim, witchSaveUsed, witchKillUsed, witchKillTarget, cupidonLovers } = gameState;
-  
+  const { nightVictim, witchSaveUsed, witchKillUsed, witchKillTarget, cupidonLovers, salvateurProtectedPlayer } = gameState;
+
+  // Determine if there's actually a victim for the witch to save
+  // If the Salvateur protected the night victim, the witch shouldn't see any victim
+  const actualVictim = nightVictim && nightVictim !== salvateurProtectedPlayer ? nightVictim : null;
+
   // Local state for witch actions
   const [saveUsed, setSaveUsed] = useState(witchSaveUsed || false);
   const [killUsed, setKillUsed] = useState(witchKillUsed || false);
   const [killTarget, setKillTarget] = useState(witchKillTarget || null);
-  
+
   // Handle save potion use
   const handleSave = () => {
     setSaveUsed(true);
     updateGameState({ witchSaveUsed: true });
   };
-  
+
   // Handle kill potion use
   const handleKill = (playerId) => {
     setKillTarget(playerId);
     setKillUsed(true);
     updateGameState({ witchKillTarget: playerId, witchKillUsed: true });
   };
-  
+
   // Handle completing witch actions
   const handleComplete = () => {
     updateGameState({
@@ -48,14 +49,14 @@ const Sorciere = ({
     });
     onActionComplete();
   };
-  
+
   // Handle canceling kill selection
   const handleCancelKill = () => {
     setKillTarget(null);
     setKillUsed(false);
     updateGameState({ witchKillTarget: null, witchKillUsed: false });
   };
-  
+
   return (
     <div className="mj-witch-actions">
       {isDead && (
@@ -63,18 +64,18 @@ const Sorciere = ({
           <p><strong>Attention :</strong> Ce rôle appartient à un joueur mort. Vous devez jouer ce rôle.</p>
         </div>
       )}
-      
+
       <h3>Potions de la Sorcière</h3>
-      
+
       <div className="mj-witch-potions">
         {/* Save Potion */}
         <div className={`mj-witch-potion ${saveUsed ? 'used' : ''}`}>
           <h4>Potion de Guérison {saveUsed && '(Utilisée)'}</h4>
-          {nightVictim ? (
+          {actualVictim ? (
             <div className="mj-witch-save">
               <p>Les Loups-Garous ont choisi de dévorer :</p>
               <div className="mj-victim-info">
-                <h4>{alivePlayers.find(p => p.id === nightVictim)?.name}</h4>
+                <h4>{alivePlayers.find(p => p.id === actualVictim)?.name}</h4>
               </div>
               {!saveUsed && (
                 <div className="mj-witch-buttons">
@@ -94,10 +95,17 @@ const Sorciere = ({
               )}
             </div>
           ) : (
-            <p>Aucune victime cette nuit.</p>
+            <div>
+              <p>Aucune victime cette nuit.</p>
+              {nightVictim && salvateurProtectedPlayer === nightVictim && (
+                <p style={{ fontSize: '0.9em', color: '#666', fontStyle: 'italic' }}>
+                  (Le Salvateur a protégé la cible des Loups-Garous)
+                </p>
+              )}
+            </div>
           )}
         </div>
-        
+
         {/* Kill Potion */}
         <div className={`mj-witch-potion ${killUsed ? 'used' : ''}`}>
           <h4>Potion de Mort {killUsed && '(Utilisée)'}</h4>
@@ -154,7 +162,7 @@ const Sorciere = ({
           )}
         </div>
       </div>
-      
+
       <div className="mj-role-actions">
         <button
           className="mj-btn mj-btn-secondary"
@@ -182,7 +190,7 @@ registerRole({
   wakeUpFrequency: null,
   defaultOrder: 3,
   component: Sorciere,
-  shouldWakeUp: (role, currentNight) => true,
+  shouldWakeUp: () => true,
   initialize: (gameState) => ({
     ...gameState,
     witchSaveUsed: gameState.witchSaveUsed || false,
@@ -193,13 +201,13 @@ registerRole({
     // Process the witch kill if used
     const { witchKillTarget, victims, cupidonLovers } = gameState;
     let newVictims = [...victims];
-    
+
     if (witchKillTarget) {
       // Only add if not already in the list
       if (!newVictims.includes(witchKillTarget)) {
         newVictims.push(witchKillTarget);
       }
-      
+
       // Check if the witch's target is a lover
       if (cupidonLovers.includes(witchKillTarget)) {
         // Find the other lover
@@ -209,7 +217,7 @@ registerRole({
         }
       }
     }
-    
+
     return {
       ...gameState,
       victims: newVictims,

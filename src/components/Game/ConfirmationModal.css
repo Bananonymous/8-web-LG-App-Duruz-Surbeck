@@ -1,147 +1,151 @@
 /* Confirmation Modal Styles */
 .mj-confirmation-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: 1rem;
-  animation: fadeIn 0.2s ease-out;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 1rem;
+    animation: fadeIn 0.2s ease-out;
 }
 
 .mj-confirmation-modal {
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  max-width: 400px;
-  width: 100%;
-  overflow: hidden;
-  animation: slideIn 0.3s ease-out;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 100%;
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mj-confirmation-modal-header {
-  padding: 1.5rem 1.5rem 0 1.5rem;
-  border-bottom: none;
+    padding: 1.5rem 1.5rem 0 1.5rem;
+    border-bottom: none;
 }
 
 .mj-confirmation-modal-title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-color);
-  text-align: center;
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-align: center;
 }
 
 .mj-confirmation-modal-body {
-  padding: 1rem 1.5rem;
+    padding: 1rem 1.5rem;
 }
 
 .mj-confirmation-modal-message {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.5;
-  color: var(--text-color);
-  text-align: center;
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-color);
+    text-align: center;
 }
 
 .mj-confirmation-modal-actions {
-  padding: 0 1.5rem 1.5rem 1.5rem;
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
 }
 
 .mj-confirmation-cancel {
-  flex: 1;
-  background: rgba(108, 117, 125, 0.2);
-  color: var(--text-color);
-  border: 1px solid rgba(108, 117, 125, 0.3);
+    flex: 1;
+    background: rgba(108, 117, 125, 0.2);
+    color: var(--text-color);
+    border: 1px solid rgba(108, 117, 125, 0.3);
 }
 
 .mj-confirmation-cancel:hover {
-  background: rgba(108, 117, 125, 0.3);
-  border-color: rgba(108, 117, 125, 0.5);
-  transform: translateY(-1px);
+    background: rgba(108, 117, 125, 0.3);
+    border-color: rgba(108, 117, 125, 0.5);
+    transform: translateY(-1px);
 }
 
 .mj-confirmation-confirm {
-  flex: 1;
-  background: var(--primary-color);
-  color: white;
-  border: 1px solid var(--primary-color);
-  font-weight: 600;
+    flex: 1;
+    background: var(--primary-color);
+    color: white;
+    border: 1px solid var(--primary-color);
+    font-weight: 600;
 }
 
 .mj-confirmation-confirm:hover {
-  background: var(--primary-color-dark);
-  border-color: var(--primary-color-dark);
-  transform: translateY(-1px);
+    background: var(--primary-color-dark);
+    border-color: var(--primary-color-dark);
+    transform: translateY(-1px);
 }
 
 .mj-confirmation-confirm.mj-btn-danger {
-  background: #dc3545;
-  border-color: #dc3545;
+    background: #dc3545;
+    border-color: #dc3545;
 }
 
 .mj-confirmation-confirm.mj-btn-danger:hover {
-  background: #c82333;
-  border-color: #bd2130;
+    background: #c82333;
+    border-color: #bd2130;
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 /* Mobile optimizations */
 @media (max-width: 480px) {
-  .mj-confirmation-modal {
-    margin: 0 1rem;
-    max-width: none;
-    width: calc(100% - 2rem);
-  }
-  
-  .mj-confirmation-modal-actions {
-    flex-direction: column;
-  }
-  
-  .mj-confirmation-cancel,
-  .mj-confirmation-confirm {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-  }
+    .mj-confirmation-modal {
+        margin: 0 1rem;
+        max-width: none;
+        width: calc(100% - 2rem);
+    }
+
+    .mj-confirmation-modal-actions {
+        flex-direction: column;
+    }
+
+    .mj-confirmation-cancel,
+    .mj-confirmation-confirm {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
 }
 
 /* Touch-friendly button sizing for mobile */
 @media (max-width: 768px) {
-  .mj-confirmation-cancel,
-  .mj-confirmation-confirm {
-    min-height: 44px; /* Apple's recommended minimum touch target size */
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-  }
+
+    .mj-confirmation-cancel,
+    .mj-confirmation-confirm {
+        min-height: 44px;
+        /* Apple's recommended minimum touch target size */
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
 }
