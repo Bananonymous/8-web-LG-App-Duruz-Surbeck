@@ -76,9 +76,12 @@ const Voyante = ({
           </div>
           <button
             className="mj-btn"
-            onClick={handleCloseReveal}
+            onClick={() => {
+              handleCloseReveal();
+              onActionComplete();
+            }}
           >
-            Fermer
+            Fermer et Continuer
           </button>
         </div>
       ) : (
@@ -93,20 +96,22 @@ const Voyante = ({
         </>
       )}
       
-      <div className="mj-role-actions">
-        <button
-          className="mj-btn mj-btn-secondary"
-          onClick={onPrevRole}
-        >
-          Précédent
-        </button>
-        <button
-          className="mj-btn"
-          onClick={onActionComplete}
-        >
-          Suivant
-        </button>
-      </div>
+      {!revealedCard && (
+        <div className="mj-role-actions">
+          <button
+            className="mj-btn mj-btn-secondary"
+            onClick={onPrevRole}
+          >
+            Précédent
+          </button>
+          <button
+            className="mj-btn"
+            onClick={onActionComplete}
+          >
+            Suivant
+          </button>
+        </div>
+      )}
     </div>
   );
 };

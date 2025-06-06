@@ -87,7 +87,7 @@ const Sorciere = ({
                   </button>
                   <button
                     className="mj-btn mj-btn-secondary"
-                    onClick={handleComplete}
+                    onClick={() => { }}
                   >
                     Ne pas sauver
                   </button>
@@ -141,7 +141,7 @@ const Sorciere = ({
                   />
                   <button
                     className="mj-btn mj-btn-secondary"
-                    onClick={handleComplete}
+                    onClick={() => { }}
                   >
                     Ne pas utiliser
                   </button>

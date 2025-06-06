@@ -104,14 +104,16 @@ const Salvateur = ({
           }}
           onClick={handleConfirmProtection}
         >
-          Confirmer
+          {protectedPlayer ? 'Confirmer' : 'Suivant'}
         </button>
-        <button
-          className="mj-btn mj-btn-secondary"
-          onClick={handleSkipProtection}
-        >
-          Ne protéger personne
-        </button>
+        {!protectedPlayer && (
+          <button
+            className="mj-btn mj-btn-secondary"
+            onClick={handleSkipProtection}
+          >
+            Ne protéger personne
+          </button>
+        )}
       </div>
     </div>
   );

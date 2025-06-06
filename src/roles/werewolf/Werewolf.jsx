@@ -383,20 +383,23 @@ const Werewolf = ({
         </div>
       </div>
 
-      <div className="mj-role-actions">
-        <button
-          className="mj-btn mj-btn-secondary"
-          onClick={onPrevRole}
-        >
-          Précédent
-        </button>
-        <button
-          className="mj-btn"
-          onClick={onActionComplete}
-        >
-          Suivant
-        </button>
-      </div>
+      {/* Only show navigation buttons if no victim is selected or action is completed */}
+      {!nightVictim && (
+        <div className="mj-role-actions">
+          <button
+            className="mj-btn mj-btn-secondary"
+            onClick={onPrevRole}
+          >
+            Précédent
+          </button>
+          <button
+            className="mj-btn"
+            onClick={onActionComplete}
+          >
+            Suivant
+          </button>
+        </div>
+      )}
     </div>
   );
 };
