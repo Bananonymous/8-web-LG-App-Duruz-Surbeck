@@ -41,11 +41,6 @@ const CardManager = () => {
         // Add a timestamp to prevent caching
         const timestamp = new Date().getTime();
         const response = await axios.get(`http://localhost:5000/api/cards?_=${timestamp}`);
-        console.log('Cards fetched from server:', response.data);
-        // Log the first few card IDs to debug
-        if (response.data && response.data.length > 0) {
-          console.log('First few card IDs from API:', response.data.slice(0, 5).map(c => c.id));
-        }
         // Make sure we're not modifying the data in any way
         setCards([...response.data]);
         setLoading(false);
@@ -154,9 +149,7 @@ const CardForm = () => {
       const fetchCard = async () => {
         try {
           setLoading(true);
-          console.log(`Fetching card with ID: ${cardId}`);
           const response = await axios.get(`http://localhost:5000/api/cards/${cardId}`);
-          console.log('Card data received:', response.data);
 
           if (response.data) {
             const cardData = { ...response.data };
@@ -171,7 +164,6 @@ const CardForm = () => {
               cardData.image_url = cardData.image_url.replace('/images/', '');
             }
 
-            console.log('Processed card data:', cardData);
             setFormData(cardData);
           } else {
             setError('Données de carte non trouvées');

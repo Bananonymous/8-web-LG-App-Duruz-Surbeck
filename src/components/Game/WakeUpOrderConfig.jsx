@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../Admin/AdminPanel.css';
 
@@ -96,8 +96,6 @@ const WakeUpOrderConfig = () => {
               card.wakes_up_at_night === "1"
             );
 
-            console.log('Found night cards:', nightCards.map(c => ({ id: c.id, name: c.name, wakes_up_at_night: c.wakes_up_at_night })));
-
             if (nightCards.length > 0) {
               const defaultOrder = nightCards.map((card, index) => ({
                 id: card.id,
@@ -109,8 +107,6 @@ const WakeUpOrderConfig = () => {
               setWakeUpOrder(defaultOrder);
             } else {
               console.warn('No night cards found in the initial data');
-              // Log all cards to help debug
-              console.log('All cards:', cardsResponse.data.map(c => ({ id: c.id, name: c.name, wakes_up_at_night: c.wakes_up_at_night, type: typeof c.wakes_up_at_night })));
               setWakeUpOrder([]);
             }
           } else {
@@ -144,8 +140,6 @@ const WakeUpOrderConfig = () => {
         card.wakes_up_at_night === "1"
       );
 
-      console.log('Updated night cards from cards change:', nightCards.map(c => ({ id: c.id, name: c.name, wakes_up_at_night: c.wakes_up_at_night })));
-
       // Create default order
       const defaultOrder = nightCards.map((card, index) => ({
         id: card.id,
@@ -173,7 +167,6 @@ const WakeUpOrderConfig = () => {
       // First, try to fetch existing wake-up order from the server
       try {
         const response = await axios.get(`${API_BASE_URL}/wake-up-order/${variantId}?includeBase=${includeBase}`);
-        console.log('Fetched wake-up order:', response.data);
 
         // Check for both possible response formats: order or order_data
         const orderData = response.data.order_data || response.data.order;
@@ -191,8 +184,8 @@ const WakeUpOrderConfig = () => {
           setLoading(false);
           return; // Exit early since we found a saved order
         }
-      } catch (error) {
-        console.log('No saved wake-up order found, creating default order');
+      } catch (fetchError) {
+        // If no saved order exists, create a default one
       }
 
       // If no saved order exists, create a default one

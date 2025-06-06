@@ -41,7 +41,6 @@ const ModernCalendar = () => {
         }));
 
         setEvents(finalEvents);
-        console.log(`Loaded ${finalEvents.length} events from Google Calendar`);
       } catch (error) {
         console.error('Error loading events:', error);
         setError('Erreur lors du chargement des événements du calendrier');

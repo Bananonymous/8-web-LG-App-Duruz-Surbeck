@@ -4,7 +4,7 @@ import './App.css';
 // Components organized by feature
 import { Home, Navbar } from './components/Layout';
 import { CardList, CardDetail } from './components/Cards';
-import Calendar from './components/Calendar';
+import { ModernCalendar } from './components/Calendar';
 import { Login, ProtectedRoute } from './components/Auth';
 import { AdminPanel } from './components/Admin';
 import { VariantList, VariantLore, VariantCardDetail } from './components/Variants';
@@ -26,7 +26,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/cards" element={<CardList />} />
                 <Route path="/cards/:id" element={<CardDetail />} />
-                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/calendar" element={<ModernCalendar />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/variants/:id" element={<VariantList />} />
                 <Route path="/variants/:id/lore" element={<VariantLore />} />

@@ -23,7 +23,6 @@ const MJPage = () => {
       try {
         const parsedState = JSON.parse(savedState);
         if (parsedState.gameConfig && parsedState.gameConfig.players && parsedState.gameConfig.players.length > 0) {
-          console.log('Found existing game in localStorage, resuming...');
           setGameConfig(parsedState.gameConfig);
           setGameState('inGame');
         }
@@ -72,7 +71,6 @@ const MJPage = () => {
   const handleGameConfigUpdate = useCallback((config) => {
     // Only update if the config is different to prevent infinite loops
     if (JSON.stringify(config) !== JSON.stringify(gameConfig)) {
-      console.log('Updating game config from saved state');
       setGameConfig(config);
     }
   }, [gameConfig]);

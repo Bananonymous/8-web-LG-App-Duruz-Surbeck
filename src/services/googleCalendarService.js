@@ -1,8 +1,5 @@
 // Google Calendar API Service
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-const CALENDAR_ID = import.meta.env.VITE_GOOGLE_CALENDAR_ID || 'primary';
-
-// Working public calendar for holidays (this is a verified working calendar)
 const PUBLIC_CALENDAR_ID = 'ah514a5j4gd708f6oup8lhorv8@group.calendar.google.com';
 
 class GoogleCalendarService {
@@ -50,7 +47,6 @@ class GoogleCalendarService {
         `orderBy=startTime&` +
         `maxResults=${maxResults}`;
 
-      console.log('Fetching from Google Calendar:', calendarId);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -63,8 +59,6 @@ class GoogleCalendarService {
       }
 
       const data = await response.json();
-      const eventCount = data.items?.length || 0;
-      console.log(`Found ${eventCount} events from Google Calendar: ${calendarId}`);
       return this.transformGoogleEvents(data.items || []);
     } catch (error) {
       console.error(`Error fetching from calendar ${calendarId}:`, error);
