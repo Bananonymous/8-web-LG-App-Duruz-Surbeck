@@ -1,166 +1,199 @@
-# Loups-Garous de Thiercelieux - Application Web
+# Les idiots du village
+## Application Web de Gestion du Jeu Loups-Garous de Thiercelieux
 
-Une application web complète pour gérer et jouer aux Loups-Garous de Thiercelieux, incluant un catalogue de cartes, un gestionnaire de partie, un calendrier intégré avec Google Calendar et un système d'administration.
+### Description du Projet
 
-## Fonctionnalités
+**"Les idiots du village"** est une application web sophistiquée conçue pour faciliter l'animation et la gestion de parties de Loups-Garous de Thiercelieux. Cette application moderne offre une interface complète pour les maîtres du jeu (MJ), permettant de gérer des parties complexes avec de multiples rôles, variantes, et mécaniques avancées.
 
-### Catalogue de Cartes
-- Affichage de toutes les cartes du jeu Loups-Garous de Thiercelieux
-- Détails sur chaque carte (équipe, description, histoire, image)
-- Distinction entre cartes officielles et personnalisées
-- Recherche et filtrage des cartes par nom, description et équipe
-- Affichage des cartes par équipe (Village, Loups-Garous, Solitaire)
+L'application combine un catalogue interactif des cartes de rôles, un système de gestion de parties en temps réel, un calendrier d'événements intégré avec Google Calendar, et un panneau d'administration complet. Elle s'adresse aux joueurs passionnés, aux clubs de jeux, et aux organisateurs d'événements souhaitant digitaliser et enrichir leur expérience de jeu.
 
-### Gestionnaire de Partie
-- Interface complète pour gérer une partie de Loups-Garous
-- Configuration de partie avec sélection des joueurs et des rôles
-- Gestion des phases de jeu (jour/nuit)
-- Suivi des joueurs vivants et morts
-- Gestion des rôles spéciaux et leurs pouvoirs:
-  - Voyante: révélation de l'identité d'un joueur
-  - Sorcière: potions de vie et de mort
-  - Cupidon: création de couples amoureux
-  - Chasseur: capacité de tuer quelqu'un en mourant
-  - Et tous les autres rôles du jeu
+### Thème et Contexte
 
-### Variantes de Jeu
-- Support pour différentes variantes du jeu
-- Possibilité d'ajouter des cartes spécifiques à chaque variante
-- Configuration de l'ordre de réveil des rôles pour chaque variante
+Ce projet s'inscrit dans le cadre du développement d'applications web modernes utilisant les technologies React et Node.js. Il démontre la maîtrise de concepts avancés incluant :
 
-### Calendrier d'Événements
-- Intégration avec Google Calendar pour afficher les événements
-- Interface interactive avec vue mensuelle, hebdomadaire et quotidienne
-- Connexion avec votre compte Google pour synchroniser vos événements
-- Affichage des détails complets des événements (date, lieu, description)
+- **Architecture fullstack** avec séparation frontend/backend
+- **Gestion d'état complexe** pour les parties multi-joueurs
+- **Intégration d'APIs externes** avec Google Calendar
+- **Interface utilisateur responsive** avec Material-UI
+- **Base de données relationnelle** SQLite
+- **Système modulaire** pour l'extensibilité des rôles de jeu
 
-### Panneau d'Administration
-- Gestion complète des cartes (ajout, modification, suppression)
-- Configuration des paramètres de l'application
-- Gestion des variantes et de leurs cartes spécifiques
-- Configuration de l'ordre de réveil des rôles
-- Réinitialisation de la base de données
-- Système d'authentification sécurisé
+### Technologies Utilisées
 
-### Interface Utilisateur
-- Design responsive pour mobile et desktop
-- Thème sombre inspiré de l'univers des Loups-Garous
-- Affichage des images de cartes avec fallback
-- Animations et transitions pour une expérience utilisateur fluide
-- Indicateurs visuels pour les joueurs amoureux (cœurs)
-- Possibilité de tuer ou ressusciter manuellement des joueurs
+#### Frontend
+- **React 18** avec hooks et context API
+- **Vite** pour le bundling et le développement
+- **Material-UI** pour les composants d'interface
+- **React Router** pour la navigation
+- **Axios** pour les appels API
+- **React Beautiful DnD** pour les interactions drag & drop
+- **React Big Calendar** pour l'affichage calendaire
 
-## Technologies utilisées
+#### Backend
+- **Node.js** avec Express 5
+- **SQLite** avec Better-SQLite3
+- **JWT** pour l'authentification
+- **Bcrypt** pour le hachage des mots de passe
+- **CORS** pour la sécurité cross-origin
 
-- **Frontend**:
-  - React 18 avec hooks
-  - React Router pour la navigation
-  - CSS modules pour le styling
-  - Vite comme bundler
-  - Axios pour les requêtes HTTP
+#### Intégrations
+- **Google Calendar API** pour la gestion d'événements
+- **Google Auth** pour l'authentification OAuth
 
-- **Backend**:
-  - Node.js
-  - Express pour l'API REST
-  - SQLite comme base de données
-  - Better-SQLite3 pour les interactions avec la base de données
-  - JWT pour l'authentification
-  - Bcrypt pour le hachage des mots de passe
+### Architecture et Structure
 
-## Structure de la Base de Données
+```
+src/
+├── components/
+│   ├── Admin/          # Panneau d'administration
+│   ├── Auth/           # Authentification et protection des routes
+│   ├── Calendar/       # Intégration Google Calendar
+│   ├── Cards/          # Catalogue des cartes de rôles
+│   ├── Game/           # Système de gestion de parties
+│   ├── Layout/         # Navigation et mise en page
+│   ├── UI/             # Composants d'interface réutilisables
+│   └── Variants/       # Gestion des variantes de jeu
+├── roles/
+│   ├── village/        # Rôles du camp Village
+│   ├── werewolf/       # Rôles du camp Loups-Garous
+│   ├── solitaire/      # Rôles solitaires
+│   ├── BaseRole.jsx    # Interface de base pour tous les rôles
+│   ├── RoleFactory.jsx # Factory pattern pour le rendu dynamique
+│   └── index.js        # Registre des rôles
+├── context/            # Gestion d'état global (Auth, Theme)
+├── services/           # Services API et intégrations
+└── styles/             # Système de design et thèmes
+```
 
-- **cards**: Cartes du jeu de base
-- **variant_cards**: Cartes spécifiques aux variantes
-- **variants**: Différentes variantes du jeu
-- **users**: Utilisateurs administrateurs
-- **wake_up_order**: Configuration de l'ordre de réveil des rôles
+### Fonctionnalités Principales
 
-## Installation
+#### 1. Catalogue de Cartes Interactif
+- **Base de données complète** : Plus de 30 rôles avec descriptions, équipes, et illustrations
+- **Système de variantes** : Support pour différentes extensions du jeu
+- **Interface de recherche** : Filtrage par équipe, type, et capacités spéciales
+- **Détails enrichis** : Lore, stratégies, et mécaniques détaillées pour chaque rôle
 
-1. Clonez le dépôt
-   ```
-   git clone https://github.com/votre-nom/loup-garous-app.git
-   cd loup-garous-app
-   ```
+#### 2. Système de Gestion de Parties
+- **Configuration flexible** : Sélection de rôles, nombre de joueurs, variantes
+- **Interface MJ avancée** : Gestion des phases de jeu, tour par tour
+- **Mécaniques complexes** : 
+  - Système d'infection (Infect Père des Loups)
+  - Gestion des couples d'amoureux (Cupidon)
+  - Pouvoirs spéciaux (Sorcière, Salvateur, Ancien)
+  - Rôles à réveil conditionnel
+- **Sauvegarde automatique** : Persistance de l'état de partie
+- **Gestion des morts** : Interface pour jouer les rôles posthumes
 
-2. Installez les dépendances
-   ```
-   npm install
-   ```
+#### 3. Système de Rôles Modulaire
+- **Architecture extensible** : Factory pattern pour l'ajout de nouveaux rôles
+- **Composants spécialisés** : Interface unique pour chaque rôle
+- **Ordre de réveil configurable** : Personnalisation via panneau admin
+- **Validation des actions** : Vérification des règles et contraintes
 
-3. **Configuration des variables d'environnement** (Important!)
-   ```bash
-   # Copiez le fichier exemple
-   cp .env.example .env
-   
-   # Modifiez .env avec vos vraies clés API
-   # IMPORTANT: Ne jamais commiter le fichier .env (il est dans .gitignore)
-   ```
+#### 4. Calendrier d'Événements
+- **Intégration Google Calendar** : Synchronisation temps réel
+- **Événements thématiques** : Tournois, formations, conventions
+- **Interface moderne** : Vue mensuelle avec détails des événements
+- **Gestion responsive** : Adaptation mobile et desktop
 
-4. Démarrez le serveur de développement
-   ```
-   npm run dev
-   ```
+#### 5. Panneau d'Administration
+- **Gestion des utilisateurs** : Création, modification, droits admin
+- **Configuration des rôles** : Ordre de réveil, propriétés spéciales
+- **Statistiques** : Métriques d'utilisation et performances
+- **Maintenance** : Outils de diagnostic et nettoyage
 
-5. Dans un autre terminal, démarrez le serveur backend
-   ```
-   node server.cjs
-   ```
+### Installation et Déploiement
 
-## Utilisation
+#### Prérequis
+- Node.js 18+ 
+- NPM ou Yarn
+- Clé API Google Calendar (optionnel)
 
-### Accès à l'Application
-- Accédez à l'application via `http://localhost:5173`
-- L'application est immédiatement utilisable sans compte pour consulter les cartes et jouer
+#### Installation
+```bash
+# Clone du repository
+git clone [URL_REPOSITORY]
+cd 8-web-LG-App-Duruz-Surbeck
 
-### Gestion d'une Partie
-1. Accédez à "Gérer une Partie" depuis la page d'accueil
-2. Configurez les joueurs et leurs rôles
-3. Utilisez l'interface pour gérer les phases jour/nuit
-4. Suivez les instructions à l'écran pour chaque rôle
+# Installation des dépendances
+npm install
 
-### Panneau d'Administration
-- Accédez au panneau d'administration via `/admin`
-- Connectez-vous avec:
-  - Nom d'utilisateur: admin
-  - Mot de passe: admin123
-- Gérez les cartes, événements et variantes
-- Configurez l'ordre de réveil des rôles
+# Initialisation de la base de données
+npm run init-db
 
-## API REST
+# Configuration (optionnel)
+cp .env.example .env
+# Éditer .env avec vos clés API
+```
 
-L'application expose une API REST complète:
+#### Développement
+```bash
+# Lancement du serveur de développement
+npm run dev
 
-- **GET /api/cards**: Liste toutes les cartes
-- **GET /api/cards/:id**: Détails d'une carte spécifique
-- **POST /api/cards**: Ajoute une nouvelle carte (admin)
-- **PUT /api/cards/:id**: Modifie une carte existante (admin)
-- **DELETE /api/cards/:id**: Supprime une carte (admin)
-- **GET /api/google-calendar/events**: Liste les événements Google Calendar
-- **GET /api/google-calendar/auth-url**: Obtient l'URL d'authentification Google
-- **POST /api/google-calendar/auth-callback**: Gère le callback d'authentification Google
-- **POST /api/google-calendar/refresh-token**: Rafraîchit le token d'accès Google
-- **GET /api/variants**: Liste toutes les variantes
-- **GET /api/variant-cards**: Liste les cartes d'une variante
-- **POST /api/login**: Authentification
-- **GET /api/verify-token**: Vérifie la validité d'un token JWT
+# Lancement du backend (terminal séparé)
+npm run server
+```
 
-## Contribution
+#### Production
+```bash
+# Build de production
+npm run build
 
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou à soumettre une pull request.
+# Démarrage de l'application
+./run-app.sh
+```
 
-### Processus de Contribution
-1. Forkez le projet
-2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/amazing-feature`)
-3. Committez vos changements (`git commit -m 'Add some amazing feature'`)
-4. Poussez vers la branche (`git push origin feature/amazing-feature`)
-5. Ouvrez une Pull Request
+### Configuration Google Calendar
 
-## Licence
+L'application support l'intégration optionnelle avec Google Calendar pour afficher des événements réels. Voir `GOOGLE_CALENDAR_SETUP.md` pour les instructions détaillées de configuration.
 
-Ce projet est sous licence MIT.
+### Tests et Qualité
 
-## Remerciements
+- **Validation ESLint** : Respect des standards de code
+- **Tests unitaires** : Composants critiques testés
+- **Responsive design** : Support mobile et desktop
+- **Accessibilité** : Respect des standards WCAG
+- **Performance** : Optimisation du bundle et lazy loading
 
-- Inspiré par le jeu de société "Les Loups-Garous de Thiercelieux" créé par Philippe des Pallières et Hervé Marly
-- Images et descriptions utilisées à des fins éducatives et de démonstration
+### Sécurité
+
+- **Authentification JWT** : Tokens sécurisés avec expiration
+- **Hachage des mots de passe** : Bcrypt avec salt
+- **Protection CORS** : Configuration stricte des origines
+- **Validation des entrées** : Sanitisation côté client et serveur
+- **Gestion des sessions** : Déconnexion automatique
+
+### Documentation Technique
+
+#### Base de Données
+Le schéma SQLite comprend :
+- **cards** : Rôles de base avec propriétés complètes
+- **variants** : Extensions et variantes de jeu
+- **variant_cards** : Rôles spécifiques aux variantes
+- **users** : Utilisateurs avec authentification
+- **wake_up_order** : Configuration personnalisée des tours
+
+#### API Endpoints
+- `GET /api/cards` : Liste des cartes disponibles
+- `GET /api/variants` : Variantes et extensions
+- `POST /api/auth/login` : Authentification utilisateur
+- `GET /api/calendar/events` : Événements Google Calendar
+- `POST /api/admin/*` : Endpoints d'administration
+
+### Évolutions Futures
+
+- **Mode multijoueur en ligne** : WebSocket pour parties distantes
+- **IA pour assistance MJ** : Suggestions automatiques
+- **Statistiques avancées** : Analytics des parties
+- **Mobile app** : Application native iOS/Android
+- **Intégration Discord** : Bot pour serveurs de jeu
+
+### Crédits et Licence
+
+Développé dans le cadre du cours de développement web. Application basée sur le jeu "Les Loups-Garous de Thiercelieux".
+
+**Auteurs** : Duruz Florian et Surbeck Léon (Nous avons travaillé sur le même ordinateur en screensharing)
+**Institution** : HEIG-VD
+
+---

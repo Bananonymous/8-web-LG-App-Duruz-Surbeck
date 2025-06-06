@@ -3,7 +3,7 @@ const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
 const CALENDAR_ID = import.meta.env.VITE_GOOGLE_CALENDAR_ID || 'primary';
 
 // Working public calendar for holidays (this is a verified working calendar)
-const PUBLIC_CALENDAR_ID = 'ah514a5j4gd708f6oup8lhorv8@group.calendar.google.com'; // Swiss holidays (working calendar)
+const PUBLIC_CALENDAR_ID = 'ah514a5j4gd708f6oup8lhorv8@group.calendar.google.com';
 
 class GoogleCalendarService {
   constructor() {
@@ -92,61 +92,6 @@ class GoogleCalendarService {
     }));
   }
 
-  /**
-   * Fetch events from multiple public calendars
-   * @param {Array} calendarIds - Array of calendar IDs
-   * @returns {Promise<Array>} Combined events from all calendars
-   */
-  async fetchMultipleCalendars(calendarIds) {
-    try {
-      if (!this.apiKey || this.apiKey === 'AIzaSyDrNGUuFuCaG5xmT0rOSb6LqOiVfM7kR1c') {
-        console.warn('Google API key not configured properly');
-        return [];
-      }
-
-      const promises = calendarIds.map(calendarId =>
-        this.fetchPublicCalendarEvents(calendarId, 5)
-      );
-
-      const results = await Promise.allSettled(promises);
-      const allEvents = [];
-
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          allEvents.push(...result.value);
-        } else {
-          console.error(`Failed to fetch from calendar ${calendarIds[index]}:`, result.reason);
-        }
-      });
-
-      // Sort all events by start date
-      return allEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
-    } catch (error) {
-      console.error('Error fetching multiple calendars:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Search for public Werewolf/Loups-Garous related calendars
-   * This is a demonstration method - in practice you'd maintain a list of known public calendars
-   * @returns {Array} List of known public calendars
-   */
-  getKnownWerewolfCalendars() {
-    return [
-      {
-        id: 'werewolf.events.switzerland@gmail.com',
-        name: 'Événements Loups-Garous Suisse',
-        description: 'Calendrier officiel des événements Loups-Garous en Suisse'
-      },
-      {
-        id: 'loups.garous.lausanne@gmail.com',
-        name: 'Loups-Garous Lausanne',
-        description: 'Événements locaux de la région lémanique'
-      }
-      // Add more public calendars as needed
-    ];
-  }
 }
 
 // Export singleton instance
