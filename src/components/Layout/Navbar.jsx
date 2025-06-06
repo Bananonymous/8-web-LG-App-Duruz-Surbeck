@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import NavDropdown from './NavDropdown';
 import axios from 'axios';
 
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
-  const { theme } = useTheme();
   const location = useLocation();
   const [variants, setVariants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   // Fetch variants for the dropdown
   useEffect(() => {
@@ -19,16 +15,38 @@ const Navbar = () => {
       try {
         const response = await axios.get('http://localhost:5000/api/variants');
         setVariants(response.data);
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching variants:', error);
-        setError('Erreur lors du chargement des variantes');
-        setLoading(false);
       }
     };
 
     fetchVariants();
   }, []);
+
+  // Re-fetch variants when navigating away from admin routes
+  useEffect(() => {
+    const isAdminRoute = location.pathname.startsWith('/admin');
+    const wasAdminRoute = sessionStorage.getItem('wasInAdmin') === 'true';
+    
+    // If we were in admin and now we're not, refresh variants
+    if (wasAdminRoute && !isAdminRoute) {
+      const fetchVariants = async () => {
+        try {
+          const response = await axios.get('http://localhost:5000/api/variants');
+          setVariants(response.data);
+        } catch (error) {
+          console.error('Error fetching variants:', error);
+        }
+      };
+      fetchVariants();
+      sessionStorage.removeItem('wasInAdmin');
+    }
+    
+    // Track if we're currently in admin
+    if (isAdminRoute) {
+      sessionStorage.setItem('wasInAdmin', 'true');
+    }
+  }, [location.pathname]);
 
   // Format variants for the dropdown
   const variantItems = variants.map(variant => ({

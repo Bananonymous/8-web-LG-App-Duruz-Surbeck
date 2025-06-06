@@ -454,7 +454,16 @@ app.delete('/api/variants/:id', authenticateToken, (req, res) => {
 // Routes pour les cartes de variante
 app.get('/api/variant-cards', (req, res) => {
   try {
-    const variantCards = db.prepare('SELECT * FROM variant_cards').all();
+    let variantCards;
+    const { variant_id } = req.query;
+
+    if (variant_id) {
+      // Filter by variant_id if provided
+      variantCards = db.prepare('SELECT * FROM variant_cards WHERE variant_id = ?').all(variant_id);
+    } else {
+      // Return all variant cards if no filter provided
+      variantCards = db.prepare('SELECT * FROM variant_cards').all();
+    }
 
     // Convert SQLite integer values to booleans for API response
     const formattedVariantCards = variantCards.map(card => ({
