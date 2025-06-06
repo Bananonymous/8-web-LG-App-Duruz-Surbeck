@@ -59,10 +59,8 @@ CREATE TABLE IF NOT EXISTS wake_up_order (
   UNIQUE(variant_id, include_base)
 );
 
--- Insert default admin user
-INSERT OR IGNORE INTO users (username, password, is_admin)
-VALUES ('admin', '$2a$10$JqPzUZuCbTvXZRqPcZqgH.Ot.QJA5QYZlGbUxLJLy5YwMKxXwE8Vy', 1);
--- Password is 'admin123' (bcrypt hashed)
+-- Note: Admin user is created by server.cjs during initialization
+-- to ensure password hash matches the current ADMIN_PASSWORD environment variable
 
 -- Default events removed in favor of Google Calendar integration
 

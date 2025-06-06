@@ -58,7 +58,9 @@ try {
   if (!adminExists) {
     const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
     db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, ?)').run(ADMIN_USERNAME, hashedPassword, 1);
-    logger.info('Admin user created successfully');
+    logger.info(`Admin user created successfully with username: ${ADMIN_USERNAME}`);
+  } else {
+    logger.info(`Admin user already exists with username: ${ADMIN_USERNAME}`);
   }
 
   logger.info('Database initialized successfully');
