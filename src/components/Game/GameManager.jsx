@@ -10,6 +10,7 @@ import '../../styles/DesignSystem.css';
 import RoleFactory from '../../roles/RoleFactory';
 import { shouldRoleWakeUp } from '../../roles';
 import Timer from './Timer';
+import ConfirmationModal from './ConfirmationModal';
 
 const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
     // Game state
@@ -70,6 +71,16 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
 
     // Player management state
     const [playerFilterTab, setPlayerFilterTab] = useState('all'); // 'all', 'alive', 'dead'
+
+    // Confirmation modal state
+    const [confirmationModal, setConfirmationModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null,
+        onCancel: null,
+        type: 'default'
+    });
 
     // Load saved game state from localStorage
     useEffect(() => {
@@ -247,7 +258,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                             setVictims(prev => {
                                 if (!prev.includes(werewolfToKillNextNight)) {
                                     // Show alert to inform the MJ
-                                    alert(`⚠️ ATTENTION ⚠️\n\nL'épée rouillée du Chevalier a tué ${werewolfPlayer.name} (${werewolfPlayer.card.name}) cette nuit !`);
+                                    showAlert(`⚠️ ATTENTION ⚠️\n\nL'épée rouillée du Chevalier a tué ${werewolfPlayer.name} (${werewolfPlayer.card.name}) cette nuit !`, 'Épée Rouillée', 'warning');
 
                                     // Check if the werewolf is a lover
                                     if (cupidonLovers.includes(werewolfToKillNextNight)) {
@@ -258,7 +269,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                                             const lover = gameConfig.players.find(p => p.id === otherLoverId)?.name;
 
                                             // Show alert to warn the MJ
-                                            alert(`⚠️ ATTENTION ⚠️\n\n${werewolfPlayer.name} était amoureux avec ${lover}.\n\n${lover} meurt de chagrin !`);
+                                            showAlert(`⚠️ ATTENTION ⚠️\n\n${werewolfPlayer.name} était amoureux avec ${lover}.\n\n${lover} meurt de chagrin !`, 'Amoureux Maudit', 'warning');
 
                                             return [...prev, werewolfToKillNextNight, otherLoverId];
                                         }
@@ -610,6 +621,18 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
         return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
+    // Helper function to show alerts using custom modal instead of browser alert
+    const showAlert = (message, title = 'Information', type = 'default') => {
+        setConfirmationModal({
+            isOpen: true,
+            title: title,
+            message: message,
+            type: type,
+            onConfirm: () => setConfirmationModal({ isOpen: false }),
+            onCancel: null // No cancel button for alerts
+        });
+    };
+
     // Process infection immediately - FINAL VERSION with direct approach
     const processInfection = () => {
         // Only proceed if we have a victim
@@ -768,7 +791,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
     // Handle werewolf phase - FINAL VERSION
     const handleWerewolfPhase = () => {
         if (!nightVictim) {
-            alert("Veuillez sélectionner une victime");
+            showAlert("Veuillez sélectionner une victime", 'Sélection Requise', 'warning');
             return;
         }
 
@@ -910,7 +933,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                 setAncienHasUsedProtection(true);
 
                 // Show alert to inform the MJ
-                alert(`⚠️ ATTENTION ⚠️\n\nL'Ancien (${victimPlayer.name}) a survécu à l'attaque grâce à sa protection spéciale. Il ne pourra plus utiliser cette protection.`);
+                showAlert(`⚠️ ATTENTION ⚠️\n\nL'Ancien (${victimPlayer.name}) a survécu à l'attaque grâce à sa protection spéciale. Il ne pourra plus utiliser cette protection.`, 'Protection de l\'Ancien', 'warning');
             }
         }
 
@@ -966,7 +989,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                     const lover = gameConfig.players.find(p => p.id === otherLoverId)?.name;
 
                     // Show alert to warn the MJ
-                    alert(`⚠️ ATTENTION ⚠️\n\n${victim} était amoureux avec ${lover}.\n\n${lover} meurt de chagrin !`);
+                    showAlert(`⚠️ ATTENTION ⚠️\n\n${victim} était amoureux avec ${lover}.\n\n${lover} meurt de chagrin !`, 'Amoureux Maudit', 'warning');
 
                     newVictims.push(otherLoverId);
                 }
@@ -1010,10 +1033,10 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                     setWerewolfToKillNextNight(werewolfToKill.id);
 
                     // Show alert to inform the MJ
-                    alert(`⚠️ ATTENTION ⚠️\n\nLe Chevalier à l'épée rouillée (${victimPlayer.name}) a été tué par les Loups-Garous. Son épée rouillée tuera ${werewolfToKill.name} (${werewolfToKill.card.name}) la nuit prochaine !`);
+                    showAlert(`⚠️ ATTENTION ⚠️\n\nLe Chevalier à l'épée rouillée (${victimPlayer.name}) a été tué par les Loups-Garous. Son épée rouillée tuera ${werewolfToKill.name} (${werewolfToKill.card.name}) la nuit prochaine !`, 'Épée Rouillée', 'warning');
                 } else {
                     // No werewolf found to kill
-                    alert(`⚠️ ATTENTION ⚠️\n\nLe Chevalier à l'épée rouillée (${victimPlayer.name}) a été tué par les Loups-Garous, mais il n'y a pas de Loup-Garou vivant à sa droite à tuer.`);
+                    showAlert(`⚠️ ATTENTION ⚠️\n\nLe Chevalier à l'épée rouillée (${victimPlayer.name}) a été tué par les Loups-Garous, mais il n'y a pas de Loup-Garou vivant à sa droite à tuer.`, 'Épée Rouillée', 'warning');
                 }
             }
         }
@@ -1035,7 +1058,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                     const lover = gameConfig.players.find(p => p.id === otherLoverId)?.name;
 
                     // Show alert to warn the MJ
-                    alert(`⚠️ ATTENTION ⚠️\n\n${victim} était amoureux avec ${lover}.\n\n${lover} meurt de chagrin !`);
+                    showAlert(`⚠️ ATTENTION ⚠️\n\n${victim} était amoureux avec ${lover}.\n\n${lover} meurt de chagrin !`, 'Amoureux Maudit', 'warning');
 
                     newVictims.push(otherLoverId);
                 }
@@ -1559,7 +1582,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                         onClick={() => {
                             // If hunter can shoot but hasn't selected a victim, show an alert
                             if (hunterCanShoot && !hunterVictim) {
-                                alert("Le Chasseur doit choisir une cible avant de continuer.");
+                                showAlert("Le Chasseur doit choisir une cible avant de continuer.", 'Sélection Requise', 'warning');
                                 return;
                             }
 
@@ -1774,7 +1797,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                             // Process executions
                             if (executionTargets.length === 0) {
                                 // No one was selected
-                                alert("Aucun joueur n'a été sélectionné pour l'exécution.");
+                                showAlert("Aucun joueur n'a été sélectionné pour l'exécution.", 'Sélection Requise', 'warning');
                                 return;
                             }
 
@@ -1797,7 +1820,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                                                 const lover = gameConfig.players.find(p => p.id === otherLoverId)?.name;
 
                                                 // Show alert to warn the MJ
-                                                alert(`⚠️ ATTENTION ⚠️\n\n${victim} était amoureux avec ${lover}.\n\n${lover} meurt de chagrin !`);
+                                                showAlert(`⚠️ ATTENTION ⚠️\n\n${victim} était amoureux avec ${lover}.\n\n${lover} meurt de chagrin !`, 'Amoureux Maudit', 'warning');
 
                                                 newExecuted.push(otherLoverId);
                                             }
@@ -1808,7 +1831,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                                         const isHunter = targetPlayer?.card.name === 'Chasseur';
                                         if (isHunter) {
                                             setHunterCanShoot(true);
-                                            alert("Le Chasseur a été exécuté et peut tirer sur un joueur avant de mourir.");
+                                            showAlert("Le Chasseur a été exécuté et peut tirer sur un joueur avant de mourir.", 'Chasseur Exécuté', 'warning');
                                         }
 
                                         // Check if target is the Ancien
@@ -1818,7 +1841,7 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                                             setAncienKilledByVillage(true);
 
                                             // Show alert to inform the MJ
-                                            alert(`⚠️ ATTENTION ⚠️\n\nL'Ancien (${targetPlayer.name}) a été exécuté par le village. Tous les villageois perdent leurs pouvoirs spéciaux !`);
+                                            showAlert(`⚠️ ATTENTION ⚠️\n\nL'Ancien (${targetPlayer.name}) a été exécuté par le village. Tous les villageois perdent leurs pouvoirs spéciaux !`, 'Ancien Exécuté', 'danger');
                                         }
                                     }
                                 });
@@ -1991,20 +2014,36 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                                                             // Toggle player status (alive/dead)
                                                             if (isAlive) {
                                                                 // Kill player
-                                                                if (confirm(`Êtes-vous sûr de vouloir tuer ${player.name} ?`)) {
-                                                                    setVictims(prev => {
-                                                                        const newVictims = [...prev, player.id];
-                                                                        // Check for game over after a short delay to allow state to update
-                                                                        setTimeout(() => checkGameOver(), 100);
-                                                                        return newVictims;
-                                                                    });
-                                                                }
+                                                                setConfirmationModal({
+                                                                    isOpen: true,
+                                                                    title: 'Tuer un joueur',
+                                                                    message: `Êtes-vous sûr de vouloir tuer ${player.name} ?`,
+                                                                    type: 'danger',
+                                                                    onConfirm: () => {
+                                                                        setVictims(prev => {
+                                                                            const newVictims = [...prev, player.id];
+                                                                            // Check for game over after a short delay to allow state to update
+                                                                            setTimeout(() => checkGameOver(), 100);
+                                                                            return newVictims;
+                                                                        });
+                                                                        setConfirmationModal({ isOpen: false });
+                                                                    },
+                                                                    onCancel: () => setConfirmationModal({ isOpen: false })
+                                                                });
                                                             } else {
                                                                 // Revive player
-                                                                if (confirm(`Êtes-vous sûr de vouloir ressusciter ${player.name} ?`)) {
-                                                                    setVictims(prev => prev.filter(id => id !== player.id));
-                                                                    setExecuted(prev => prev.filter(id => id !== player.id));
-                                                                }
+                                                                setConfirmationModal({
+                                                                    isOpen: true,
+                                                                    title: 'Ressusciter un joueur',
+                                                                    message: `Êtes-vous sûr de vouloir ressusciter ${player.name} ?`,
+                                                                    type: 'default',
+                                                                    onConfirm: () => {
+                                                                        setVictims(prev => prev.filter(id => id !== player.id));
+                                                                        setExecuted(prev => prev.filter(id => id !== player.id));
+                                                                        setConfirmationModal({ isOpen: false });
+                                                                    },
+                                                                    onCancel: () => setConfirmationModal({ isOpen: false })
+                                                                });
                                                             }
                                                         }}
                                                     >
@@ -2064,6 +2103,16 @@ const GameManager = ({ gameConfig, onRestart, setGameConfig }) => {
                     )}
                 </>
             )}
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={confirmationModal.isOpen}
+                title={confirmationModal.title}
+                message={confirmationModal.message}
+                type={confirmationModal.type}
+                onConfirm={confirmationModal.onConfirm}
+                onCancel={confirmationModal.onCancel}
+            />
         </div>
     );
 };

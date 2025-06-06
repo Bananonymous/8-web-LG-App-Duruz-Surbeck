@@ -27,7 +27,7 @@ const Navbar = () => {
   useEffect(() => {
     const isAdminRoute = location.pathname.startsWith('/admin');
     const wasAdminRoute = sessionStorage.getItem('wasInAdmin') === 'true';
-    
+
     // If we were in admin and now we're not, refresh variants
     if (wasAdminRoute && !isAdminRoute) {
       const fetchVariants = async () => {
@@ -41,7 +41,7 @@ const Navbar = () => {
       fetchVariants();
       sessionStorage.removeItem('wasInAdmin');
     }
-    
+
     // Track if we're currently in admin
     if (isAdminRoute) {
       sessionStorage.setItem('wasInAdmin', 'true');
