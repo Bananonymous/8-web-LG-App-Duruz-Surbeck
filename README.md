@@ -12,7 +12,6 @@ L'application combine un catalogue interactif des cartes de rôles, un système 
 Ce projet s'inscrit dans le cadre du développement d'applications web modernes utilisant les technologies React et Node.js. Il démontre la maîtrise de concepts avancés incluant :
 
 - **Architecture fullstack** avec séparation frontend/backend
-- **Gestion d'état complexe** pour les parties multi-joueurs
 - **Intégration d'APIs externes** avec Google Calendar
 - **Interface utilisateur responsive** avec Material-UI
 - **Base de données relationnelle** SQLite
@@ -92,22 +91,20 @@ src/
 
 #### 4. Calendrier d'Événements
 - **Intégration Google Calendar** : Synchronisation temps réel
-- **Événements thématiques** : Tournois, formations, conventions
 - **Interface moderne** : Vue mensuelle avec détails des événements
 - **Gestion responsive** : Adaptation mobile et desktop
+- **Vue de liste** : Affichage des prochains événements
 
 #### 5. Panneau d'Administration
 - **Gestion des utilisateurs** : Création, modification, droits admin
 - **Configuration des rôles** : Ordre de réveil, propriétés spéciales
-- **Statistiques** : Métriques d'utilisation et performances
-- **Maintenance** : Outils de diagnostic et nettoyage
 
 ### Installation et Déploiement
 
 #### Prérequis
 - Node.js 18+ 
 - NPM ou Yarn
-- Clé API Google Calendar (optionnel)
+- Clé API Google Calendar (requis uniquement pour la fonctionnalité de calendrier)
 
 #### Installation
 ```bash
@@ -121,7 +118,7 @@ npm install
 # Initialisation de la base de données
 npm run init-db
 
-# Configuration (optionnel)
+# Configuration (optionnel mais nécessaire pour Google Calendar)
 cp .env.example .env
 # Éditer .env avec vos clés API
 ```
@@ -132,7 +129,7 @@ cp .env.example .env
 npm run dev
 
 # Lancement du backend (terminal séparé)
-npm run server
+node server.cjs
 ```
 
 #### Production
@@ -147,14 +144,6 @@ npm run build
 ### Configuration Google Calendar
 
 L'application support l'intégration optionnelle avec Google Calendar pour afficher des événements réels. Voir `GOOGLE_CALENDAR_SETUP.md` pour les instructions détaillées de configuration.
-
-### Tests et Qualité
-
-- **Validation ESLint** : Respect des standards de code
-- **Tests unitaires** : Composants critiques testés
-- **Responsive design** : Support mobile et desktop
-- **Accessibilité** : Respect des standards WCAG
-- **Performance** : Optimisation du bundle et lazy loading
 
 ### Sécurité
 
@@ -184,10 +173,9 @@ Le schéma SQLite comprend :
 ### Évolutions Futures
 
 - **Mode multijoueur en ligne** : WebSocket pour parties distantes
-- **IA pour assistance MJ** : Suggestions automatiques
 - **Statistiques avancées** : Analytics des parties
-- **Mobile app** : Application native iOS/Android
 - **Intégration Discord** : Bot pour serveurs de jeu
+- **Extensions de rôles** : Ajout de nouveaux rôles et variantes
 
 ### Crédits et Licence
 
